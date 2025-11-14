@@ -1,0 +1,28 @@
+profil 
+        edit
+        adress
+        payment (no redirection)
+        darkmode
+        log out
+
+
+
+suppot
+
+        AS IT IS
+
+
+shop dashbord = home (page.tsx)
+
+shop profile 
+            edit
+            bank details
+            document
+
+
+delevry home = orders
+
+
+
+ADMIN
+        dashbord = home
