@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import { 
     ArrowLeft, 
-    ChevronRight,
-    MessageSquare,
     Smile,
     Bug,
     Star,

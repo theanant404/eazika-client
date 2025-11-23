@@ -5,20 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Phone, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { UserService } from "@/app/services/userService";
+import { useUserStore } from "@/app/hooks/useUserStore";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2>(1); // 1 = Phone, 2 = OTP
+  const { setAuthToken } = useUserStore();
+
+  const [step, setStep] = useState<1 | 2>(1);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [requestId, setRequestId] = useState("");
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
-  
-  // Base API URL - Replace with your actual ENV variable if needed
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"; 
 
-  // Timer logic for Resend OTP
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (step === 2 && timer > 0) {
@@ -33,23 +33,18 @@ export default function LoginPage() {
     
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      });
-      const data = await res.json();
-
-      if (res.ok) {
+      const data = await UserService.loginUser({ phone });
+      
+      if (data.data.requestId) {
         setRequestId(data.data.requestId);
         setStep(2);
         setTimer(30);
       } else {
-        alert(data.message || "Failed to send OTP");
+        alert("Failed to send OTP");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error:", error);
-      alert("Something went wrong. Please try again.");
+      alert(error.response?.data?.message || "Login failed. Check your connection.");
     } finally {
       setLoading(false);
     }
@@ -60,31 +55,22 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      const res = await fetch(`${API_URL}/users/login/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone,
-          requestId,
-          otp,
-          deviceInfo: navigator.userAgent, // Sending browser info
-        }),
+      const data = await UserService.verifyLogin({
+        phone,
+        requestId,
+        otp,
+        deviceInfo: navigator.userAgent,
       });
-      const data = await res.json();
 
-      if (res.ok) {
-        // Store tokens
-        localStorage.setItem("accessToken", data.data.accessToken);
-        localStorage.setItem("user", JSON.stringify(data.data.user));
-        
-        // Redirect to home
-        router.push("/"); 
+      if (data.data.accessToken) {
+        setAuthToken(data.data.accessToken);
+        router.push("/home"); 
       } else {
-        alert(data.message || "Invalid OTP");
+        alert("Invalid OTP");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Verify Error:", error);
-      alert("Verification failed.");
+      alert(error.response?.data?.message || "Verification failed.");
     } finally {
       setLoading(false);
     }
@@ -92,20 +78,15 @@ export default function LoginPage() {
 
   const handleResend = async () => {
     if (timer > 0) return;
-    
+    setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users/login/resend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      });
-      
-      if (res.ok) {
-        setTimer(30);
-        alert("OTP Resent Successfully!");
-      }
+      await UserService.resendLoginOtp({ phone });
+      setTimer(30);
+      alert("OTP Resent Successfully!");
     } catch (error) {
        alert("Failed to resend OTP");
+    } finally {
+       setLoading(false);
     }
   };
 
@@ -115,10 +96,8 @@ export default function LoginPage() {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl border border-yellow-100 dark:border-yellow-900/20 w-full relative overflow-hidden"
     >
-       {/* Background Decoration */}
        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
-      {/* Header */}
       <div className="mb-8 text-center relative z-10">
         <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 mb-4 transition-colors">
           <ChevronLeft size={16} className="mr-1" /> Back to Home

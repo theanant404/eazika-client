@@ -5,18 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Phone, User, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { UserService } from "@/app/services/userService";
+import { useUserStore } from "@/app/hooks/useUserStore";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { setAuthToken } = useUserStore();
+
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({ name: "", phone: "" });
   const [otp, setOtp] = useState("");
   const [requestId, setRequestId] = useState("");
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
-
-  // Base API URL
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"; 
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -32,27 +33,22 @@ export default function RegisterPage() {
     
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name: formData.name,
-          phone: formData.phone,
-          deviceInfo: navigator.userAgent 
-        }),
+      const data = await UserService.registerUser({
+        name: formData.name,
+        phone: formData.phone,
+        deviceInfo: navigator.userAgent
       });
-      const data = await res.json();
 
-      if (res.ok) {
+      if (data.data.requestId) {
         setRequestId(data.data.requestId);
         setStep(2);
         setTimer(30);
       } else {
-        alert(data.message || "Failed to send OTP");
+        alert("Failed to send OTP. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Register Error:", error);
-      alert("Registration failed. Please try again.");
+      alert(error.response?.data?.message || "Registration failed.");
     } finally {
       setLoading(false);
     }
@@ -63,29 +59,22 @@ export default function RegisterPage() {
     setLoading(true);
     
     try {
-      const res = await fetch(`${API_URL}/users/register/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          requestId,
-          otp,
-          deviceInfo: navigator.userAgent,
-        }),
+      const data = await UserService.verifyRegistration({
+        phone: formData.phone,
+        requestId,
+        otp,
+        deviceInfo: navigator.userAgent,
       });
-      const data = await res.json();
 
-      if (res.ok) {
-        localStorage.setItem("accessToken", data.data.accessToken);
-        localStorage.setItem("user", JSON.stringify(data.data.user));
-        alert("Account Created Successfully!");
-        router.push("/");
+      if (data.data.accessToken) {
+        setAuthToken(data.data.accessToken);
+        router.push("/home"); // Redirect to Home after success
       } else {
-        alert(data.message || "Invalid OTP");
+        alert("Invalid OTP");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Verify Error:", error);
-      alert("Verification failed.");
+      alert(error.response?.data?.message || "Verification failed.");
     } finally {
       setLoading(false);
     }
@@ -93,24 +82,19 @@ export default function RegisterPage() {
 
   const handleResend = async () => {
     if (timer > 0) return;
-
+    setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users/register/resend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name: formData.name, 
-          phone: formData.phone, 
-          deviceInfo: navigator.userAgent 
-        }),
+      await UserService.resendRegistrationOtp({
+        name: formData.name,
+        phone: formData.phone,
+        deviceInfo: navigator.userAgent
       });
-      
-      if (res.ok) {
-        setTimer(30);
-        alert("OTP Resent!");
-      }
+      setTimer(30);
+      alert("OTP Resent!");
     } catch (error) {
       alert("Failed to resend OTP");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -209,7 +193,7 @@ export default function RegisterPage() {
                   onClick={() => setStep(1)} 
                   className="text-xs text-yellow-600 dark:text-yellow-400 hover:underline font-medium"
                 >
-                  Edit Details
+                  Change Number
                 </button>
               </div>
               <div className="relative group">
@@ -226,13 +210,12 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* FIXED BUTTON: Standard yellow-400 + Strong hover effect */}
             <button
               type="submit"
               disabled={loading || otp.length < 4}
               className="w-full bg-yellow-400 text-black font-bold py-3.5 rounded-xl hover:bg-yellow-500 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none flex justify-center items-center shadow-md"
             >
-              {loading ? <Loader2 className="animate-spin" /> : "VERIFY & REGISTER"}
+              {loading ? <Loader2 className="animate-spin" /> : "VERIFY & LOGIN"}
             </button>
 
             <div className="text-center mt-4">
