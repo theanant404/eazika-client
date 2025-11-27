@@ -13,7 +13,7 @@ import {
     Loader2
 } from 'lucide-react';
 import Link from 'next/link';
-import { ShopService, ShopOrder } from '@/app/services/shopService';
+import { ShopService, ShopOrder } from '@/services/shopService';
 
 const TABS = [
     { id: 'all', label: 'All' },

@@ -1,34 +1,77 @@
-profil 
-        edit
-        adress
-        payment (no redirection)
-        darkmode
-        log out
+home page will be 
+then
+C:\Users\Administrator\Desktop\eazika-client-2O\app\(customer)\home\page.tsx
+now
+C:\Users\Administrator\Desktop\eazika-client-2O\app\page.tsx
+
+
+customer home page 
+
+serch bar -> banner -> catg -> fresh
+
+load mor k jagh infinife scrool
 
 
 
 
-shop dashbord = home (page.tsx)
+ptofile page 
 
-shop profile 
-            edit
-            bank details
-            document
+dark name / light name theam 
 
 
-delevry home = orders
-
-
-
-ADMIN
-        dashbord = home
-
-//file
-services  ko root mai krna hai
-hooks ko root mai
+payment wala remove
+edit profile botton remove
+shope keeper botton remove
 
 
 
-                
+shop
+gst not compu;lsory
 
-                where is expetion of header
+
+
+
+
+category 
+
+meat
+vagei 
+bakry } remove
+
+
+
+product id ,mai product buy now botton with product in chakeout page
+prices according to size (variation)
+
+
+
+
+
+
+
+stucture:--->   
+
+
+mobile customer header (name in left aline)
+
+
+
+
+all over 
+
+alart ()
+
+
+
+
+
+
+
+
+
+
+
+
+build errors
+
+

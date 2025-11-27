@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useDeliveryStore } from '@/app/hooks/useDeliveryStore';
-import { DeliveryService } from '@/app/services/deliveryService';
+import { useDeliveryStore } from '@/hooks/useDeliveryStore';
+import { DeliveryService } from '@/services/deliveryService';
 import { 
     User, 
     Bike, 
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 export default function DeliveryProfilePage() {
     const { profile, history, fetchProfile, fetchHistory, updateProfile, isLoading } = useDeliveryStore();
@@ -272,7 +273,7 @@ export default function DeliveryProfilePage() {
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-3">
-                                            {profile.licenseImage?.map((img, i) => (
+                                            {profile.licenseImage?.map((img: string | StaticImport, i: React.Key | null | undefined) => (
                                                 <div key={i} className="relative aspect-video bg-gray-900 rounded-xl overflow-hidden border border-gray-700">
                                                     <Image src={img} alt={`License ${i}`} layout="fill" objectFit="cover" />
                                                 </div>

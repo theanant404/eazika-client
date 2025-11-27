@@ -18,7 +18,7 @@ import {
 import { motion } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import { useParams, useRouter } from 'next/navigation';
-import { CartService, Order } from '@/app/services/cartService';
+import { CartService, Order } from '@/services/cartService';
 
 // Helper to get Status Icon & Color based on API status
 const getStatusInfo = (status: string) => {
@@ -97,7 +97,7 @@ export default function OrderDetailsPage() {
                 <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
                     <Package className="w-16 h-16 text-gray-300 dark:text-gray-700 mb-4" />
                     <p className="text-gray-500">We couldn't find the order details.</p>
-                    <button onClick={() => router.push('/home')} className="mt-4 text-yellow-600 font-bold">Go Home</button>
+                    <button onClick={() => router.push('/')} className="mt-4 text-yellow-600 font-bold">Go Home</button>
                 </div>
             </div>
         );

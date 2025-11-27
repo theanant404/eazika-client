@@ -15,7 +15,7 @@ import {
     Tag,
     Box
 } from 'lucide-react';
-import { ShopService } from '@/app/services/shopService';
+import { ShopService } from '@/services/shopService';
 import Image from 'next/image';
 
 // Mock Categories

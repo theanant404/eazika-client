@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Phone, User, Lock, ArrowRight, Loader2 } from "lucide-react";
-import { UserService } from "@/app/services/userService";
-import { useUserStore } from "@/app/hooks/useUserStore";
+import { UserService } from "@/services/userService";
+import { useUserStore } from "@/hooks/useUserStore";
 
 export default function RegisterPage() {
   const router = useRouter();

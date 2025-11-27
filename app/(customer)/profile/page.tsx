@@ -20,7 +20,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
-import { useUserStore } from '@/app/hooks/useUserStore';
+import { useUserStore } from '@/hooks/useUserStore';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 

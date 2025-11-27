@@ -16,7 +16,7 @@ import {
     Crosshair
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserService, Address, AddressPayload } from '@/app/services/userService';
+import { UserService, Address, AddressPayload } from '@/services/userService';
 
 // --- Confirmation Modal ---
 const DeleteConfirmationModal = ({ 

@@ -7,7 +7,7 @@ import Image from "next/image";
 import { ArrowLeft, Heart, Star, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { categories, products } from "@/app/data/mockData";
-import { useWishlistStore } from "@/app/hooks/useWishlistStore";
+import { useWishlistStore } from "@/hooks/useWishlistStore";
 
 export default function SingleCategoryPage() {
   const params = useParams();

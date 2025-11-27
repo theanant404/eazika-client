@@ -17,7 +17,7 @@ import {
     Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShopService, ShopRider, UserProfile } from '@/app/services/shopService';
+import { ShopService, ShopRider, UserProfile } from '@/services/shopService';
 import Image from 'next/image';
 
 export default function RidersPage() {

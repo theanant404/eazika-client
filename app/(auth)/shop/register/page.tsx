@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { ShopService, CreateShopPayload } from '@/app/services/shopService';
+import { ShopService, CreateShopPayload } from '@/services/shopService';
 
 const STEPS = [
     { id: 1, title: 'Info', icon: Store },

@@ -18,9 +18,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { ShopService, ShopProfile } from '@/app/services/shopService';
+import { ShopService, ShopProfile } from '@/services/shopService';
 import { useRouter } from 'next/navigation';
-import { useUserStore } from '@/app/hooks/useUserStore';
+import { useUserStore } from '@/hooks/useUserStore';
 
 export default function ShopProfilePage() {
     const router = useRouter();

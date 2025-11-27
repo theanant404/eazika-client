@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { useDeliveryStore } from '@/app/hooks/useDeliveryStore';
+import { useDeliveryStore } from '@/hooks/useDeliveryStore';
 import { MapPin, Package, Navigation, Play, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

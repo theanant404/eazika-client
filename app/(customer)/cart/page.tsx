@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation"; // Import useRouter
 import Image from "next/image";
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCartStore } from "@/app/hooks/useCartStore";
-import { CartItem } from "@/app/services/cartService"; // Correct import source
+import { useCartStore } from "@/hooks/useCartStore";
+import { CartItem } from "@/services/cartService"; // Correct import source
 
 export default function CartPage() {
   const router = useRouter(); // Initialize router
@@ -149,7 +149,7 @@ export default function CartPage() {
               </Link>
               
               <div className="mt-4 text-center">
-                 <Link href="/home" className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 underline">
+                 <Link href="/" className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 underline">
                     Continue Shopping
                  </Link>
               </div>

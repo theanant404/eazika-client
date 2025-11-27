@@ -12,8 +12,8 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { UserService } from "@/app/services/userService";
-import { useUserStore } from "@/app/hooks/useUserStore";
+import { UserService } from "@/services/userService";
+import { useUserStore } from "@/hooks/useUserStore";
 import { toast } from "sonner";
 
 export default function LoginPage() {

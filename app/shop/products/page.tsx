@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useShopProductStore } from '@/app/hooks/useShopProductStore';
+import { useShopProductStore } from '@/hooks/useShopProductStore';
 
 const TABS = [
     { id: 'inventory', label: 'Inventory', icon: Box },

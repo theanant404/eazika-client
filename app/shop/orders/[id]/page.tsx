@@ -16,7 +16,7 @@ import {
     X
 } from 'lucide-react';
 import Image from 'next/image';
-import { ShopService, ShopOrderDetail, ShopRider } from '@/app/services/shopService';
+import { ShopService, ShopOrderDetail, ShopRider } from '@/services/shopService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ShopOrderDetailsPage() {

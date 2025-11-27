@@ -1,6 +1,5 @@
 "use client";
 
-import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -13,7 +12,7 @@ import {
     Store,
     BarChart3
 } from 'lucide-react';
-import { useUserStore } from '@/app/hooks/useUserStore';
+import { useUserStore } from '@/hooks/useUserStore';
 import { useRouter } from 'next/navigation';
 
 export function ShopSidebar() {

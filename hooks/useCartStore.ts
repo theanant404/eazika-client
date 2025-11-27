@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CartService, CartItem, AddToCartPayload, OrderPayload } from '@/app/services/cartService';
+import { CartService, CartItem, AddToCartPayload, OrderPayload } from '@/services/cartService';
 import { products as mockProducts } from '@/app/data/mockData'; 
 
 interface CartState {

@@ -7,8 +7,8 @@ import Image from "next/image";
 import { ArrowLeft, Heart, Star, ShoppingCart, Trash2, ArrowRight, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { products } from "@/app/data/mockData";
-import { useWishlistStore } from "@/app/hooks/useWishlistStore";
-import { useCartStore } from "@/app/hooks/useCartStore"; // Import Cart Store
+import { useWishlistStore } from "@/hooks/useWishlistStore";
+import { useCartStore } from "@/hooks/useCartStore"; // Import Cart Store
 
 export default function WishlistPage() {
   const router = useRouter(); // Initialize router

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Providers from "@/components/Providers";
-import { GOOGLE_ANALYTICS_ID } from "@/app/utils/constants"; // CHANGED: Import
+import { GOOGLE_ANALYTICS_ID } from "@/lib/utils/constants"; // CHANGED: Import
 import "./globals.css";
 import Script from "next/script";
 

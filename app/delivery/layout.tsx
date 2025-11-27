@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, List, User, Bike, Power } from 'lucide-react';
-import { useDeliveryStore } from "@/app/hooks/useDeliveryStore";
+import { useDeliveryStore } from "@/hooks/useDeliveryStore";
 
 export default function DeliveryLayout({
   children,

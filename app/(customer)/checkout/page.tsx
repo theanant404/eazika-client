@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, Plus, CheckCircle, CreditCard, Loader2, Truck, Crosshair } from "lucide-react";
 import { motion } from "framer-motion";
-import { useCartStore } from "@/app/hooks/useCartStore";
-import { UserService, Address } from "@/app/services/userService";
+import { useCartStore } from "@/hooks/useCartStore";
+import { UserService, Address } from "@/services/userService";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -126,7 +126,7 @@ export default function CheckoutPage() {
       if (orderId) {
           router.push(`/orders/track-order?id=${orderId}`);
       } else {
-          router.push('/home');
+          router.push('/');
           alert("Order placed successfully!");
       }
     } catch (error) {
@@ -138,7 +138,7 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Your cart is empty</h2>
-        <button onClick={() => router.push('/home')} className="text-yellow-600 font-semibold">
+        <button onClick={() => router.push('/')} className="text-yellow-600 font-semibold">
           Go Shopping
         </button>
       </div>

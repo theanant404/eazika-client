@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ShopService, ShopProduct } from '@/app/services/shopService';
+import { ShopService, ShopProduct } from '@/services/shopService';
 
 interface ShopProductState {
   products: ShopProduct[];

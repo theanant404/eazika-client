@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { products } from "@/app/data/mockData";
-import { useCartStore } from "@/app/hooks/useCartStore";
-import { useWishlistStore } from "@/app/hooks/useWishlistStore";
+import { useCartStore } from "@/hooks/useCartStore";
+import { useWishlistStore } from "@/hooks/useWishlistStore";
 
 export default function ProductPage() {
   const params = useParams();

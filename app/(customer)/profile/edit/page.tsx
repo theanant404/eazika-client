@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, User, Mail, Phone, Save, Loader2, Camera } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useUserStore } from '@/app/hooks/useUserStore';
-import { UserService } from '@/app/services/userService';
+import { useUserStore } from '@/hooks/useUserStore';
+import { UserService } from '@/services/userService';
 
 export default function EditProfilePage() {
   const router = useRouter();

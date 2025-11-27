@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserService, User, UpdateProfilePayload } from '@/app/services/userService';
+import { UserService, User, UpdateProfilePayload } from '@/services/userService';
 
 interface UserState {
   user: User | null;

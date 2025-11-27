@@ -293,7 +293,7 @@ export default function PaymentMethodsPage() {
                     </a>
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Payment Methods</h1>
                 </header>
-                <main className="flex-grow overflow-y-auto p-4 md:p-6">
+                <main className="grow overflow-y-auto p-4 md:p-6">
                     <AnimatePresence mode="wait">
                         {isAdding ? (
                             <PaymentMethodForm key="form" onSave={handleSaveMethod} onCancel={() => setIsAdding(false)} />
@@ -313,9 +313,9 @@ export default function PaymentMethodsPage() {
                                             <div className="flex gap-4">
                                                 {/* Conditional Icon */}
                                                 {method.type === 'UPI' ? (
-                                                    <AtSign className="w-6 h-6 text-gray-400 dark:text-gray-500 mt-1 flex-shrink-0" />
+                                                    <AtSign className="w-6 h-6 text-gray-400 dark:text-gray-500 mt-1 shrink-0" />
                                                 ) : (
-                                                    <CreditCard className="w-6 h-6 text-gray-400 dark:text-gray-500 mt-1 flex-shrink-0" />
+                                                    <CreditCard className="w-6 h-6 text-gray-400 dark:text-gray-500 mt-1 shrink-0" />
                                                 )}
                                                 <div>
                                                     {/* Conditional Text */}
@@ -329,7 +329,7 @@ export default function PaymentMethodsPage() {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2 flex-shrink-0 ml-2">
+                                            <div className="flex gap-2 shrink-0 ml-2">
                                                 {/* <button className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Edit className="w-4 h-4" /></button> */}
                                                 <button onClick={() => setMethodToDelete(method)} className="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                                             </div>

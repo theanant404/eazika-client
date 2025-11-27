@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, PanInfo, useAnimation, AnimatePresence, useDragControls } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CartService, TrackingDetails } from '@/app/services/cartService';
+import { CartService, TrackingDetails } from '@/services/cartService';
 
 // --- Components ---
 

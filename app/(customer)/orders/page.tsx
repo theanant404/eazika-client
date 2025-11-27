@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronRight, Package, CheckCircle, RefreshCw, XCircle, Load
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CartService, Order } from '@/app/services/cartService';
+import { CartService, Order } from '@/services/cartService';
 
 // --- Helper to get Status Icon ---
 const getStatusInfo = (status: string) => {
@@ -189,7 +189,7 @@ export default function OrderHistoryPage() {
                         : 'Your completed and cancelled orders will appear here.'
                     }
                     </p>
-                    <Link href="/home">
+                    <Link href="/">
                         <button className="mt-6 px-6 py-2.5 bg-yellow-500 text-white font-bold rounded-full hover:bg-yellow-600 transition-colors">
                             Start Shopping
                         </button>

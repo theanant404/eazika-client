@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Star, Plus, Flame, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { products } from "@/app/data/mockData";
-import { useWishlistStore } from "@/app/hooks/useWishlistStore";
+import { useWishlistStore } from "@/hooks/useWishlistStore";
 
 export default function TrendingPage() {
   const router = useRouter();

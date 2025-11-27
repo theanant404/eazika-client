@@ -14,7 +14,7 @@ import {
     Truck,
     Printer
 } from "lucide-react";
-import { CartService, Order } from "@/app/services/cartService";
+import { CartService, Order } from "@/services/cartService";
 import { products as mockProducts } from "@/app/data/mockData";
 import Image from "next/image";
 

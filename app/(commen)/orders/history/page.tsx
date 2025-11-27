@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Box, ChevronRight, Loader2, Clock, Package, CheckCircle, XCircle, Truck } from "lucide-react";
-import { CartService, Order } from "@/app/services/cartService";
+import { CartService, Order } from "@/services/cartService";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 

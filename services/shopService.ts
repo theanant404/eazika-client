@@ -1,6 +1,10 @@
-import axiosInstance from '@/app/lib/axios';
+import axiosInstance from '@/lib/axios';
 
-// --- 1. COMMON INTERFACES ---
+// ==========================================
+//              INTERFACES
+// ==========================================
+
+// --- 1. Common & Shop ---
 
 export interface BankDetail {
   accountHolderName: string;
@@ -17,8 +21,6 @@ export interface ShopDocuments {
   businessCertificateImage: string;
   panImage: string;
 }
-
-// --- 2. SHOP & PROFILE PAYLOADS ---
 
 export interface CreateShopPayload {
   shopName: string;
@@ -38,7 +40,7 @@ export interface ShopProfile extends CreateShopPayload {
   updatedAt: string;
 }
 
-// --- 3. PRODUCT INTERFACES ---
+// --- 2. Products ---
 
 export interface ProductPrice {
   id?: number;
@@ -76,12 +78,11 @@ export interface ShopProduct {
   isActive: boolean;
   isGlobal: boolean;
   category: string;
-  // Mapped for UI convenience, usually derived from 'prices' array
   price: number; 
   prices?: ProductPrice[]; 
 }
 
-// --- 4. ORDER INTERFACES ---
+// --- 3. Orders ---
 
 export interface ShopOrder {
   id: number;
@@ -111,7 +112,7 @@ export interface ShopOrderDetail extends ShopOrder {
   };
 }
 
-// --- 5. RIDER INTERFACES ---
+// --- 4. Riders ---
 
 export interface ShopRider {
   id: number;
@@ -133,6 +134,27 @@ export interface UserProfile {
   role: string;
 }
 
+// --- 5. Analytics (EXPORTED HERE) ---
+
+export interface ShopAnalytics {
+  revenueChart: { label: string; value: number }[];
+  ordersChart: { label: string; value: number }[];
+  metrics: {
+    revenue: string;
+    orders: string;
+    customers: string;
+    aov: string;
+    revenueTrend?: string;
+    ordersTrend?: string;
+    customersTrend?: string;
+    aovTrend?: string;
+  };
+  products: {
+    name: string;
+    sales: number;
+    revenue: string;
+  }[];
+}
 
 // ==========================================
 //              SERVICE IMPLEMENTATION
@@ -142,26 +164,21 @@ export const ShopService = {
   
   // --- SHOP MANAGEMENT ---
 
-  // POST /shops/create-shop
   createShop: async (data: CreateShopPayload) => {
     const response = await axiosInstance.post('/shops/create-shop', data);
     return response.data;
   },
 
-  // PUT /shops/update-shop
   updateShop: async (data: Partial<CreateShopPayload>) => {
     const response = await axiosInstance.put('/shops/update-shop', data);
     return response.data;
   },
 
-  // GET /shops/profile (Assumed Endpoint - Required for Profile Page)
   getShopProfile: async () => {
-    // NOTE: Endpoint assumed based on standard REST practices
     const response = await axiosInstance.get<ShopProfile>('/shops/profile');
     return response.data;
   },
 
-  // POST /upload (Assumed Endpoint for Images)
   uploadImage: async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -173,21 +190,17 @@ export const ShopService = {
 
   // --- PRODUCT MANAGEMENT ---
 
-  // GET /shops/products (Assumed Endpoint - Required for Products Page)
   getInventory: async () => {
     const response = await axiosInstance.get<ShopProduct[]>('/shops/products');
     return response.data;
   },
 
-  // GET /products/global (Assumed Endpoint - Required for Global Catalog Tab)
   getGlobalCatalog: async () => {
     const response = await axiosInstance.get<ShopProduct[]>('/products/global');
     return response.data;
   },
 
-  // POST /shops/add-shop-product
   addProduct: async (data: any) => {
-    // Transforming UI data to API Payload structure if needed
     const payload: AddProductPayload = {
         productCategoryId: data.productCategoryId || 1,
         globalProductId: data.globalProductId || 0,
@@ -208,19 +221,16 @@ export const ShopService = {
     return response.data;
   },
 
-  // PUT /shops/update-shop-product-stock/{productId}
   updateStock: async (productId: number, stock: number) => {
     const response = await axiosInstance.put(`/shops/update-shop-product-stock/${productId}`, { stock });
     return response.data;
   },
 
-  // PUT /shops/update-shop-product/{productId}
   updateProductDetails: async (productId: number, data: Partial<UpdateProductPayload>) => {
     const response = await axiosInstance.put(`/shops/update-shop-product/${productId}`, data);
     return response.data;
   },
 
-  // DELETE /shops/products/{id} (Assumed Endpoint)
   deleteProduct: async (productId: number) => {
     const response = await axiosInstance.delete(`/shops/products/${productId}`);
     return response.data;
@@ -228,20 +238,17 @@ export const ShopService = {
 
   // --- ORDER MANAGEMENT ---
   
-  // GET /shops/orders (Assumed Endpoint - Required for Orders List)
   getShopOrders: async (status?: string) => {
     const params = status && status !== 'all' ? { status } : {};
     const response = await axiosInstance.get<ShopOrder[]>('/shops/orders', { params });
     return response.data;
   },
 
-  // GET /shops/orders/{id} (Assumed Endpoint - Required for Order Details)
   getShopOrderById: async (id: number) => {
     const response = await axiosInstance.get<ShopOrderDetail>(`/shops/orders/${id}`);
     return response.data;
   },
 
-  // PUT /shops/orders/{id}/status (Assumed Endpoint)
   updateOrderStatus: async (id: number, status: string) => {
     const response = await axiosInstance.put(`/shops/orders/${id}/status`, { status });
     return response.data;
@@ -249,31 +256,26 @@ export const ShopService = {
 
   // --- RIDER MANAGEMENT ---
 
-  // GET /shops/riders (Assumed Endpoint)
   getShopRiders: async () => {
     const response = await axiosInstance.get<ShopRider[]>('/shops/riders');
     return response.data;
   },
 
-  // GET /shops/get-user?phone=...
   searchUserByPhone: async (phone: string) => {
     const response = await axiosInstance.get<UserProfile>('/shops/get-user', { params: { phone } });
     return response.data;
   },
 
-  // PATCH /shops/send-invite-to-delivery
   sendRiderInvite: async (userId: number) => {
     const response = await axiosInstance.patch('/shops/send-invite-to-delivery', { userId });
     return response.data;
   },
 
-  // POST /shops/orders/{orderId}/assign (Assumed Endpoint)
   assignRider: async (orderId: number, riderId: number) => {
     const response = await axiosInstance.post(`/shops/orders/${orderId}/assign`, { riderId });
     return response.data;
   },
 
-  // DELETE /shops/riders/{riderId} (Assumed Endpoint)
   removeRider: async (riderId: number) => {
     const response = await axiosInstance.delete(`/shops/riders/${riderId}`);
     return response.data;
@@ -281,9 +283,8 @@ export const ShopService = {
 
   // --- ANALYTICS ---
 
-  // GET /shops/analytics (Assumed Endpoint)
   getAnalytics: async (range: string) => {
-    const response = await axiosInstance.get('/shops/analytics', { params: { range } });
+    const response = await axiosInstance.get<ShopAnalytics>('/shops/analytics', { params: { range } });
     return response.data;
   }
 };

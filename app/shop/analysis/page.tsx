@@ -15,7 +15,7 @@ import {
     BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShopService, ShopAnalytics } from '@/app/services/shopService';
+import { ShopService, ShopAnalytics } from '@/services/shopService';
 
 const timeRanges = ['Today', 'Last 7 Days', 'Last 30 Days', 'This Year'];
 const metricsOptions = [

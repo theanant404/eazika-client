@@ -7,7 +7,7 @@ import { BannerCarousel } from "@/app/components/BannerCarousel";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import { categories, products as allProducts } from "@/app/data/mockData";
 import Link from "next/link";
-import { useWishlistStore } from "@/app/hooks/useWishlistStore";
+import { useWishlistStore } from "@/hooks/useWishlistStore";
 
 // Animation Variants
 const containerVariants: Variants = {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ShoppingCart, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useCartStore } from "@/app/hooks/useCartStore";
+import { useCartStore } from "@/hooks/useCartStore";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);

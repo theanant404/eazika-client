@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DeliveryService, DeliveryOrder, DeliveryProfile, UpdateDeliveryProfilePayload } from '@/app/services/deliveryService';
+import { DeliveryService, DeliveryOrder, DeliveryProfile, UpdateDeliveryProfilePayload } from '@/services/deliveryService';
 
 interface DeliveryState {
   orders: DeliveryOrder[];
