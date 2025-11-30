@@ -17,13 +17,15 @@ import {
 } from 'lucide-react';
 import { ShopService } from '@/services/shopService';
 import Image from 'next/image';
+import { uploadProductImage } from '@/lib/uploadFile';
 
 // Mock Categories
-const CATEGORIES = ['Grocery', 'Vegetables', 'Fruits', 'Dairy', 'Bakery', 'Snacks', 'Beverages', 'Household'];
+const CATEGORIES = ['Grocery', 'Electronics', 'Furniture', 'Clothing', 'Bakery', 'Home Applinces','Others'];
 
 export default function NewProductPage() {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
@@ -42,14 +44,30 @@ export default function NewProductPage() {
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
+        setIsUploading(true);
         try {
-            const url = await ShopService.uploadImage(file);
-            setFormData(prev => ({ ...prev, images: [...prev.images, url] }));
+            // Use the centralized upload function for product images
+            // Note: uploadProductImage returns { success, urls } where urls is an array
+            const result = await uploadProductImage(files);
+            
+            // FIX: Check only for result.success to correctly narrow type in else block
+            if (result.success) {
+                setFormData(prev => ({ 
+                    ...prev, 
+                    images: [...prev.images, ...result.urls] 
+                }));
+            } else {
+                console.error("Image upload failed");
+            }
         } catch (error) {
             console.error("Image upload failed", error);
+        } finally {
+            setIsUploading(false);
+            // Reset input so same file can be selected again if needed
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -63,7 +81,6 @@ export default function NewProductPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.price || formData.images.length === 0) {
-            alert("Please fill required fields and upload at least one image.");
             return;
         }
 
@@ -102,7 +119,6 @@ export default function NewProductPage() {
                 
                 {/* --- Left Column: Images (Takes 4/12 columns on Desktop) --- */}
                 <div className="md:col-span-4 space-y-6">
-                    {/* CHANGED: Removed 'sticky top-24' from mobile view, added 'md:sticky md:top-24' */}
                     <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 md:sticky md:top-24">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold text-gray-900 dark:text-white">Images</h3>
@@ -149,9 +165,10 @@ export default function NewProductPage() {
                                 <button 
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="aspect-square rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center hover:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-colors text-gray-400 hover:text-yellow-600"
+                                    disabled={isUploading}
+                                    className="aspect-square rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center hover:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-colors text-gray-400 hover:text-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <Upload size={18} />
+                                    {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
                                 </button>
                             )}
                         </div>
@@ -161,7 +178,11 @@ export default function NewProductPage() {
                             onChange={handleImageUpload} 
                             className="hidden" 
                             accept="image/*"
+                            multiple // Allow selecting multiple files
                         />
+                        <p className="text-[10px] text-gray-400 mt-2 text-center">
+                            Upload up to 4 images. Max 5MB each.
+                        </p>
                     </div>
                 </div>
 

@@ -17,6 +17,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { ShopService, CreateShopPayload } from '@/services/shopService';
+// Import your existing upload function
+import { uploadProfilePic } from '@/lib/uploadFile';
 
 const STEPS = [
     { id: 1, title: 'Info', icon: Store },
@@ -25,12 +27,20 @@ const STEPS = [
     { id: 4, title: 'Done', icon: CheckCircle },
 ];
 
+// Extended interface to handle local form state including document numbers
+interface ExtendedFormData extends CreateShopPayload {
+    documentNumbers: {
+        aadhar: string;
+        pan: string;
+    }
+}
+
 export default function ShopRegistrationPage() {
     const router = useRouter();
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [formData, setFormData] = useState<CreateShopPayload>({
+    const [formData, setFormData] = useState<ExtendedFormData>({
         shopName: '',
         shopCategory: 'grocery',
         shopImage: [],
@@ -49,6 +59,10 @@ export default function ShopRegistrationPage() {
             electricityBillImage: '',
             businessCertificateImage: '',
             panImage: ''
+        },
+        documentNumbers: {
+            aadhar: '',
+            pan: ''
         }
     });
 
@@ -63,19 +77,33 @@ export default function ShopRegistrationPage() {
         }));
     };
 
+    const updateDocNumber = (field: 'aadhar' | 'pan', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            documentNumbers: { ...prev.documentNumbers, [field]: value }
+        }));
+    };
+
     // --- Validation Logic ---
     const validateStep = (step: number) => {
         switch (step) {
             case 1: 
-                if (!formData.shopName || !formData.gstNumber || !formData.fssaiNumber || formData.shopImage.length === 0) {
-                    alert("Please fill all basic details and upload a shop cover image.");
+                // GST is now Optional, removed check for formData.gstNumber
+                if (!formData.shopName || !formData.fssaiNumber || formData.shopImage.length === 0) {
+                    alert("Please fill Shop Name, FSSAI and upload a cover image.");
                     return false;
                 }
                 return true;
             case 2: 
                 const { aadharImage, panImage, electricityBillImage, businessCertificateImage } = formData.documents;
+                // Check for images
                 if (!aadharImage || !panImage || !electricityBillImage || !businessCertificateImage) {
-                    alert("Please upload all 4 required documents to proceed.");
+                    alert("Please upload all 4 required documents.");
+                    return false;
+                }
+                // Check for numbers
+                if (!formData.documentNumbers.aadhar || !formData.documentNumbers.pan) {
+                    alert("Please enter Aadhar and PAN numbers.");
                     return false;
                 }
                 return true;
@@ -102,14 +130,21 @@ export default function ShopRegistrationPage() {
         else router.back();
     };
 
+    // Reusable Image Uploader Component with optional Number Input
     const ImageUploader = ({ 
         label, 
         value, 
         onUpload,
+        numberField,
+        numberValue,
+        onNumberChange
     }: { 
         label: string, 
         value: string | string[], 
         onUpload: (url: string) => void,
+        numberField?: boolean,
+        numberValue?: string,
+        onNumberChange?: (val: string) => void
     }) => {
         const [uploading, setUploading] = useState(false);
         const inputRef = useRef<HTMLInputElement>(null);
@@ -120,10 +155,17 @@ export default function ShopRegistrationPage() {
             
             setUploading(true);
             try {
-                const url = await ShopService.uploadImage(file);
-                onUpload(url);
+                // Use your existing library function
+                const result = await uploadProfilePic(file);
+                
+                if (result.success) {
+                    onUpload(result.url);
+                } else {
+                    alert(result.message || "Upload failed");
+                }
             } catch (err) {
-                console.error("Upload failed", err);
+                console.error("Upload error", err);
+                alert("An unexpected error occurred during upload.");
             } finally {
                 setUploading(false);
             }
@@ -132,12 +174,11 @@ export default function ShopRegistrationPage() {
         const displayValue = Array.isArray(value) ? value[0] : value; 
 
         return (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
                 <div className="flex justify-between items-center">
                     <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                         {label} <span className="text-red-500">*</span>
                     </label>
-                    {/* Visual Indicator for Upload Status */}
                     {displayValue ? (
                         <span className="text-[10px] font-bold text-green-600 flex items-center gap-1">
                             <CheckCircle size={10} /> Uploaded
@@ -146,6 +187,8 @@ export default function ShopRegistrationPage() {
                         <span className="text-[10px] font-bold text-red-400">Required</span>
                     )}
                 </div>
+                
+                {/* Image Box */}
                 <div 
                     onClick={() => inputRef.current?.click()}
                     className={`border border-dashed rounded-xl p-2 flex flex-col items-center justify-center cursor-pointer transition-all h-24 relative overflow-hidden group ${
@@ -172,6 +215,18 @@ export default function ShopRegistrationPage() {
                     )}
                     <input type="file" ref={inputRef} className="hidden" onChange={handleFile} accept="image/*" />
                 </div>
+
+                {/* Number Input (Rendered only if numberField is true) */}
+                {numberField && onNumberChange && (
+                    <input 
+                        type="text"
+                        placeholder={`Enter ${label} Number`}
+                        value={numberValue}
+                        onChange={(e) => onNumberChange(e.target.value)}
+                        className="input-field uppercase"
+                        required
+                    />
+                )}
             </div>
         );
     };
@@ -179,7 +234,17 @@ export default function ShopRegistrationPage() {
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
-            await ShopService.createShop(formData);
+            // Prepare payload. If the API accepts aadharNumber/panNumber at the root level, spread them here.
+            // Otherwise, they remain in local state or are merged as needed.
+            // Assuming current API payload structure:
+            const payload = {
+                ...formData,
+                // If API needs these fields, mapping them here:
+                // aadharNumber: formData.documentNumbers.aadhar, 
+                // panNumber: formData.documentNumbers.pan
+            };
+            
+            await ShopService.createShop(payload);
             router.push('/shop/dashboard'); 
             alert("Application Submitted! We will review your details.");
         } catch (error) {
@@ -286,11 +351,10 @@ export default function ShopRegistrationPage() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                            GST No <span className="text-red-500">*</span>
+                                            GST No <span className="text-gray-400 text-[9px] font-normal">(Optional)</span>
                                         </label>
                                         <input 
                                             type="text" 
-                                            required
                                             value={formData.gstNumber}
                                             onChange={(e) => updateForm('gstNumber', e.target.value)}
                                             className="input-field uppercase" 
@@ -320,17 +384,46 @@ export default function ShopRegistrationPage() {
                         </motion.div>
                     )}
 
-                    {/* STEP 2: Documents */}
+                    {/* STEP 2: Documents (Images + Numbers) */}
                     {currentStep === 2 && (
                         <motion.div 
                             key="step2"
                             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                            className="grid grid-cols-2 gap-3"
+                            className="grid grid-cols-2 gap-4"
                         >
-                            <ImageUploader label="Aadhar" value={formData.documents.aadharImage} onUpload={(url) => updateNestedForm('documents', 'aadharImage', url)} />
-                            <ImageUploader label="PAN Card" value={formData.documents.panImage} onUpload={(url) => updateNestedForm('documents', 'panImage', url)} />
-                            <ImageUploader label="Bill" value={formData.documents.electricityBillImage} onUpload={(url) => updateNestedForm('documents', 'electricityBillImage', url)} />
-                            <ImageUploader label="Certificate" value={formData.documents.businessCertificateImage} onUpload={(url) => updateNestedForm('documents', 'businessCertificateImage', url)} />
+                            {/* Aadhar: Image + Number Input */}
+                            <ImageUploader 
+                                label="Aadhar Card" 
+                                value={formData.documents.aadharImage} 
+                                onUpload={(url) => updateNestedForm('documents', 'aadharImage', url)} 
+                                numberField
+                                numberValue={formData.documentNumbers.aadhar}
+                                onNumberChange={(val) => updateDocNumber('aadhar', val)}
+                            />
+                            
+                            {/* PAN: Image + Number Input */}
+                            <ImageUploader 
+                                label="PAN Card" 
+                                value={formData.documents.panImage} 
+                                onUpload={(url) => updateNestedForm('documents', 'panImage', url)} 
+                                numberField
+                                numberValue={formData.documentNumbers.pan}
+                                onNumberChange={(val) => updateDocNumber('pan', val)}
+                            />
+
+                            {/* Bill: Image Only */}
+                            <ImageUploader 
+                                label="Electricity Bill" 
+                                value={formData.documents.electricityBillImage} 
+                                onUpload={(url) => updateNestedForm('documents', 'electricityBillImage', url)} 
+                            />
+                            
+                            {/* Certificate: Image Only */}
+                            <ImageUploader 
+                                label="Business Cert." 
+                                value={formData.documents.businessCertificateImage} 
+                                onUpload={(url) => updateNestedForm('documents', 'businessCertificateImage', url)} 
+                            />
                         </motion.div>
                     )}
 

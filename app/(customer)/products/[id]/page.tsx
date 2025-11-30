@@ -14,17 +14,17 @@ import {
   Share2, 
   Truck,
   ShieldCheck,
-  Loader2
+  Loader2,
+  CreditCard // Added CreditCard icon for Buy Now
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { ShopService, ShopProduct } from "@/services/shopService"; // Use Service
+import { ShopService, ShopProduct } from "@/services/shopService"; 
 import { useCartStore } from "@/hooks/useCartStore";
 import { useWishlistStore } from "@/hooks/useWishlistStore";
 
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
-  // Handle potential array if catch-all route, though [id] is usually string
   const idParam = params?.id;
   const id = Array.isArray(idParam) ? idParam[0] : idParam;
 
@@ -36,29 +36,25 @@ export default function ProductPage() {
   const [product, setProduct] = useState<ShopProduct | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ShopProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBuying, setIsBuying] = useState(false); // State for Buy Now loading
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   
-  // Variant State (Mocked for UI as API might not support variants yet)
+  // Variant State
   const [selectedSize, setSelectedSize] = useState("1kg");
   const sizes = ["500g", "1kg", "2kg"];
 
-  // Fetch Product Data
   useEffect(() => {
     if (!id) return;
 
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // 1. Fetch Main Product
-        // Parse ID: Remove 'p-' prefix if present from old links, otherwise parse int
         const numericId = parseInt(id.replace(/\D/g, '')) || 0;
         const productData = await ShopService.getProductById(numericId);
         setProduct(productData);
 
-        // 2. Fetch Related Products (Using Trending as a fallback for suggestions)
         const trendingData = await ShopService.getTrendingProducts();
-        // Filter out current product and take top 4
         setRelatedProducts(trendingData.filter(p => p.id !== numericId).slice(0, 4));
 
       } catch (error) {
@@ -81,15 +77,34 @@ export default function ProductPage() {
 
   const handleAddToCart = async () => {
     if (!product) return;
-    
-    // Use the first price ID if available, or fallback
     const priceId = product.prices && product.prices.length > 0 ? product.prices[0].id : 1;
-
     await addToCart({
       shopProductId: product.id,
       productPriceId: priceId || 1, 
       quantity: quantity
     });
+  };
+
+  // NEW: Handle Buy Now
+  const handleBuyNow = async () => {
+    if (!product) return;
+    setIsBuying(true);
+    try {
+      // 1. Add to Cart
+      const priceId = product.prices && product.prices.length > 0 ? product.prices[0].id : 1;
+      await addToCart({
+        shopProductId: product.id,
+        productPriceId: priceId || 1, 
+        quantity: quantity
+      });
+      
+      // 2. Redirect to Checkout immediately
+      router.push('/checkout');
+    } catch (error) {
+      console.error("Buy Now failed", error);
+    } finally {
+      setIsBuying(false);
+    }
   };
 
   const handleShare = () => {
@@ -119,7 +134,7 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 pb-20 md:pb-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pb-32 md:pb-8">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-10">
         <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -155,11 +170,8 @@ export default function ProductPage() {
               ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
               )}
-              {/* Trending Badge logic if available in API response, otherwise remove or use static */}
-              {/* <span className="absolute top-4 left-4 bg-yellow-500 text-white text-xs font-bold px-3 py-1.5 rounded-full z-10 shadow-sm">TRENDING</span> */}
             </motion.div>
 
-            {/* Thumbnails */}
             {product.images && product.images.length > 1 && (
               <div className="flex gap-3 px-4 md:px-0 overflow-x-auto no-scrollbar">
                 {product.images.map((img, idx) => (
@@ -186,7 +198,6 @@ export default function ProductPage() {
                   <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white leading-tight">
                     {product.name}
                   </h1>
-                  {/* Desktop Wishlist & Share */}
                   <div className="hidden md:flex gap-2">
                     <button 
                       onClick={handleShare}
@@ -220,7 +231,7 @@ export default function ProductPage() {
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Total Price</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">₹{product.price}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">₹{(product.price * quantity).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-3 bg-white dark:bg-gray-700 rounded-xl p-1.5 shadow-sm">
                     <button 
@@ -286,26 +297,44 @@ export default function ProductPage() {
                 </div>
             </div>
 
-            {/* Mobile Add to Cart (Sticky Bottom) */}
+            {/* Sticky Bottom Actions (Add to Cart + Buy Now) */}
             <div className="fixed md:static bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 md:border-none md:p-0 md:bg-transparent z-20">
-                <div className="flex gap-4 max-w-7xl mx-auto">
+                <div className="flex gap-3 max-w-7xl mx-auto">
                     <button 
                         onClick={() => toggleWishlist(product.id.toString())}
-                        className="md:hidden p-4 rounded-2xl border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
+                        className="md:hidden p-4 rounded-2xl border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 shrink-0"
                     >
                         <Heart size={24} className={isLiked ? "fill-red-500 text-red-500" : ""} />
                     </button>
+                    
+                    {/* Add to Cart Button */}
                     <button 
                         onClick={handleAddToCart}
-                        disabled={isCartLoading}
-                        className="flex-1 bg-yellow-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-yellow-500/30 hover:bg-yellow-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                        disabled={isCartLoading || isBuying}
+                        className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                         {isCartLoading ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <Loader2 size={20} className="animate-spin" />
                         ) : (
                             <>
                                 <ShoppingCart size={20} />
-                                Add to Cart - ₹{(product.price * quantity).toFixed(2)}
+                                <span className="hidden sm:inline">Add to Cart</span>
+                            </>
+                        )}
+                    </button>
+
+                    {/* Buy Now Button */}
+                    <button 
+                        onClick={handleBuyNow}
+                        disabled={isBuying || isCartLoading}
+                        className="flex-1 bg-yellow-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-yellow-500/30 hover:bg-yellow-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                    >
+                        {isBuying ? (
+                            <Loader2 size={20} className="animate-spin" />
+                        ) : (
+                            <>
+                                <CreditCard size={20} />
+                                <span>Buy Now</span>
                             </>
                         )}
                     </button>

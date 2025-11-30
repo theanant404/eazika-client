@@ -7,116 +7,6 @@
 
 
 
-shop
-gst not compu;lsory
-
-
-
-
-
-
-
-product id ,mai product buy now botton with product in chakeout page
-prices according to size (variation)
-
-
-
-
-
-
-
-stucture:--->   
-
-
-mobile customer header (name in left aline)
-
-
-
-
-all over 
-
-alart ()
-
-
-
-
-
-
-
-
-
-
-
-
-build errors
-
-
-
-
-
-
-
-
--------------------
-
-
-
-shop page
-dashbord
-share botton } r
-add product } r
-
-
-all botton should have cusor pointer 
-
-shop / product 
-layout
-
-
-
-shop/profile 
-
-name -> shope detail
-
-
-
-
-
-
-after login name of user is not shouing up in profile
-
-
-
-user edit botton working
-
-
-
-user / notificatiobn page 
-
-
-
-
-header propfile name initial 
-
-
-heaer page indication hightight
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 (((((((((((((((((((((((((**************************)))))))))))))))))))))))))
@@ -125,3 +15,5 @@ backend
 
 			The 404 Error means the /products/trending endpoint hasn't been implemented on your backend server yet.
 			The 404 Error occurs because the /categories endpoint does not exist on your backend yet (it wasn't in the API list you provided)
+			userService.ts:140  GET https://server.eazika.com/api/v2/users/user/me 404 (Not Found)
+			shopService.ts:245  GET https://server.eazika.com/api/v2/products/trending 404 (Not Found)

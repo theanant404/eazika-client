@@ -12,12 +12,14 @@ import {
     Sun, 
     LogOut,
     AlertTriangle,
+    FileText,
+    LifeBuoy,
     Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
-import { useUserStore } from '@/hooks/useUserStore'; // Corrected import path
+import { useUserStore } from '@/hooks/useUserStore';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -68,7 +70,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setIsClient(true);
-    // Fetch latest user data to ensure profile is up-to-date
+    // Ensure we have the latest user data
     fetchUser();
   }, []);
 
@@ -118,7 +120,7 @@ export default function ProfilePage() {
           animate="visible"
           variants={containerVariants}
         >
-          {/* User Info Card */}
+          {/* User Info Card - Now Clickable & Shows Phone */}
           <motion.div 
             variants={itemVariants} 
             onClick={() => router.push('/profile/edit')}
@@ -141,7 +143,7 @@ export default function ProfilePage() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {user?.name || 'Guest User'}
               </h2>
-              {/* Dynamic Phone Number */}
+              {/* Dynamic Phone (Primary) or Email */}
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {user?.phone || user?.email || 'Sign in to view profile'}
               </p>

@@ -27,25 +27,39 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe-area-inset-bottom">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname.startsWith(item.href);
+          
+          // FIX: Specific logic for Home vs other routes
+          const isActive = item.href === "/" 
+            ? pathname === "/" 
+            : pathname.startsWith(item.href);
           
           return (
             <Link
               key={item.name}
               href={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center w-full h-full space-y-1",
+                "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200",
                 isActive
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  ? "text-yellow-500 dark:text-yellow-400"
+                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               )}
             >
-              <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-xs font-medium">{item.name}</span>
+              {/* Icon with conditional sizing/stroke based on active state */}
+              <Icon 
+                size={24} 
+                strokeWidth={isActive ? 2.5 : 2} 
+                className={isActive ? "fill-yellow-500/10" : ""}
+              />
+              <span className={clsx(
+                "text-[10px] font-medium",
+                isActive ? "font-bold" : ""
+              )}>
+                {item.name}
+              </span>
             </Link>
           );
         })}

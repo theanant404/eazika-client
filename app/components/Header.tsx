@@ -1,17 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Heart } from "lucide-react";
+import Image from "next/image";
+import { ShoppingCart, Heart, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useCartStore } from "@/hooks/useCartStore";
+import { useUserStore } from "@/hooks/useUserStore";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
+  
+  // Connect to Stores
   const { cartCount } = useCartStore();
+  const { user } = useUserStore();
 
   useEffect(() => {
+    setIsMounted(true);
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
@@ -25,6 +32,9 @@ export function Header() {
     { name: "Deals", href: "/trending" },
   ];
 
+  // Helper for active state
+  const isActive = (path: string) => pathname === path;
+
   return (
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
@@ -36,7 +46,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between gap-4">
         {/* --- LEFT SECTION: Logo --- */}
         <div className="flex items-center gap-3 md:gap-6">
-          <div className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 md:flex items-center">
+          <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2 group">
               <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:rotate-12 transition-transform">
                 E
@@ -49,14 +59,13 @@ export function Header() {
         </div>
 
         {/* --- CENTER SECTION: Navigation Links (Right Aligned) --- */}
-        {/* Added ml-auto to push this section to the right */}
         <nav className="hidden md:flex items-center gap-8 ml-auto mr-4">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
               className={`font-medium text-lg transition-colors hover:text-yellow-500 ${
-                pathname === link.href
+                isActive(link.href)
                   ? "text-yellow-600 dark:text-yellow-400"
                   : "text-gray-600 dark:text-gray-300"
               }`}
@@ -68,35 +77,59 @@ export function Header() {
 
         {/* --- RIGHT SECTION: Actions --- */}
         <div className="flex items-center gap-2 md:gap-3">
+          
+          {/* Wishlist Icon */}
           <Link
             href="/wishlist"
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all hover:scale-105 hover:text-red-500 dark:hover:text-red-500"
+            className={`p-2 rounded-full transition-all hover:scale-105 ${
+              isActive("/wishlist")
+                ? "text-red-500 bg-red-50 dark:bg-red-900/20" // Active State
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-500 dark:hover:text-red-500"
+            }`}
           >
-            <Heart size={22} strokeWidth={2} />
+            <Heart size={22} strokeWidth={isActive("/wishlist") ? 2.5 : 2} className={isActive("/wishlist") ? "fill-current" : ""} />
           </Link>
 
+          {/* Cart Icon */}
           <Link
             href="/cart"
-            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all hover:scale-105 relative group"
+            className={`p-2 rounded-full transition-all hover:scale-105 relative group ${
+              isActive("/cart")
+                ? "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20" // Active State
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
           >
             <ShoppingCart
               size={22}
-              strokeWidth={2}
-              className="group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors"
+              strokeWidth={isActive("/cart") ? 2.5 : 2}
+              className={!isActive("/cart") ? "group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors" : ""}
             />
-            {cartCount > 0 && (
+            {isMounted && cartCount > 0 && (
               <span className="absolute top-1 right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm">
                 {cartCount}
               </span>
             )}
           </Link>
 
+          {/* Profile Icon */}
           <Link
             href="/profile"
-            className="hidden md:flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+            className={`flex items-center gap-2 pl-2 pr-1 py-1 rounded-full transition-all border ${
+                isActive("/profile")
+                ? "border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/10"
+                : "border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700"
+            }`}
           >
-            <div className="w-8 h-8 bg-linear-to-tr from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-md">
-              R
+            <div className="w-8 h-8 bg-linear-to-tr from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-md overflow-hidden relative">
+              {isMounted && user ? (
+                 user.image ? (
+                    <Image src={user.image} alt="Profile" layout="fill" objectFit="cover" />
+                 ) : (
+                    user.name?.charAt(0).toUpperCase() || "U"
+                 )
+              ) : (
+                 <User size={18} />
+              )}
             </div>
           </Link>
         </div>

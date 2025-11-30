@@ -28,7 +28,7 @@ export default function ShopLayout({
     { name: 'Products', href: '/shop/products', icon: Package },
     { name: 'Orders', href: '/shop/orders', icon: ShoppingBag },
     { name: 'Riders', href: '/shop/riders', icon: Users },
-    { name: 'Profile', href: '/shop/profile', icon: User },
+    { name: 'Profile', href: '/shop/detail', icon: User },
   ];
 
   return (
