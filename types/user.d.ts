@@ -3,6 +3,7 @@ interface User {
   name: string;
   phone: string;
   email?: string;
+  image?: string;
   role: "user" | "admin" | "delivery";
   image?: string;
   addresses?: Address[];

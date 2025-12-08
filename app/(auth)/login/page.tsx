@@ -12,12 +12,12 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { UserService } from "@/services/userService";
-import { useUserStore } from "@/hooks/useUserStore";
+import { userService } from "@/services/userService";
+import { userStore } from "@/store";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setAuthToken } = useUserStore();
+  // const { setAuthToken } = userStore();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [phone, setPhone] = useState("");
@@ -67,7 +67,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       // Use Service instead of raw fetch
-      const data = await UserService.loginUser({ phone: cleanPhone });
+      const data = await userService.loginUser(cleanPhone);
 
       if (data?.data?.requestId) {
         setRequestId(data.data.requestId);
@@ -93,7 +93,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await UserService.verifyLogin({
+      const data = await userService.verifyLogin({
         phone: phone.replace(/\D/g, ""),
         requestId,
         otp,
@@ -106,7 +106,7 @@ export default function LoginPage() {
         const role = user?.role || "user"; // Default to user if role missing
 
         // 1. Update Store & LocalStorage (For Client-side Logic)
-        setAuthToken(token);
+        // setAuthToken(token);
         if (user) await localStorage.setItem("user", JSON.stringify(user));
 
         // 2. Update Cookies (For Middleware Route Protection)
@@ -137,7 +137,7 @@ export default function LoginPage() {
     setErrorMessage("");
     setLoading(true);
     try {
-      await UserService.resendLoginOtp({ phone: phone.replace(/\D/g, "") });
+      await userService.resendLoginOtp(phone.replace(/\D/g, ""), requestId);
       setTimer(30);
       alert("OTP Resent Successfully!");
     } catch (error) {

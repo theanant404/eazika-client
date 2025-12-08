@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import { ArrowRight, Heart, Star, Search, X, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { BannerCarousel } from "@/app/components/BannerCarousel";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useWishlistStore } from "@/hooks/useWishlistStore";
-import { useCartStore } from "@/hooks/useCartStore";
+import { useCartStore } from "@/store";
 import { ShopService, Category } from "@/services/shopService";
-import coustomerService from "@/services/customerSerbice";
+import coustomerService from "@/services/customerService";
 import type { ProductType } from "@/types";
 
 // Animation Variants
@@ -70,12 +70,11 @@ export default function HomePage() {
       try {
         const [catsData, prodsData] = await Promise.all([
           ShopService.getCategories(),
-          // ShopService.getAllProducts(),
           await coustomerService.getProducts(),
         ]);
 
         setCategories(catsData);
-        console.log("Fetched Products:", prodsData);
+        // console.log("Fetched Products:", prodsData);
         setProducts(prodsData.products);
       } catch (error) {
         console.error("Failed to load home data", error);

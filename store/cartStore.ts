@@ -31,7 +31,7 @@ export const cartStore = create<CartState>((set, get) => ({
   updateQuantity: (itemId, quantity) =>
     updateQuantityData(Number(itemId), quantity, get, set),
   clearCart: () => clearCartData(get, set),
-  placeOrder: (data) => placeOrderData(data, set),
+  placeOrder: (data: OrderPayload) => placeOrderData(data, get, set),
 }));
 
 type Get = () => CartState;
@@ -134,12 +134,11 @@ const clearCartData = async (get: Get, set: Set) => {
     });
   }
 };
-const placeOrderData = async (data: OrderPayload, set: Set) => {
+const placeOrderData = async (data: OrderPayload, get: Get, set: Set) => {
   set({ isLoading: true });
   try {
     const order = await cartMethods.createOrder(data);
-    // Clear local cart on success
-    set({ items: [], cartCount: 0, cartTotalAmount: 0 });
+    await get().clearCart();
     return order;
   } finally {
     set({ isLoading: false });

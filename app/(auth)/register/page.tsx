@@ -13,12 +13,12 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { UserService } from "@/services/userService";
-import { useUserStore } from "@/hooks/useUserStore";
+import { userService } from "@/services/userService";
+// import { userStore } from "@/store";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { setAuthToken } = useUserStore();
+  // const { setAuthToken } = userStore();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({ name: "", phone: "" });
@@ -64,7 +64,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const data = await UserService.registerUser({
+      const data = await userService.registerUser({
         name: formData.name,
         phone: cleanPhone,
         deviceInfo: navigator.userAgent,
@@ -94,7 +94,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const data = await UserService.verifyRegistration({
+      const data = await userService.verifyRegistration({
         phone: formData.phone.replace(/\D/g, ""),
         requestId,
         otp,
@@ -107,8 +107,8 @@ export default function RegisterPage() {
         const role = user?.role || "user";
 
         // 1. Update Store
-        setAuthToken(token);
-        if (user) localStorage.setItem("user", JSON.stringify(user));
+        // setAuthToken(token);
+        // if (user) localStorage.setItem("user", JSON.stringify(user));
 
         // 2. Update Cookies (CRITICAL for Middleware)
         setAuthCookies(token, role);
@@ -138,7 +138,7 @@ export default function RegisterPage() {
     setErrorMessage("");
     setLoading(true);
     try {
-      await UserService.resendRegistrationOtp({
+      await userService.resendRegistrationOtp({
         name: formData.name,
         phone: formData.phone.replace(/\D/g, ""),
         deviceInfo: navigator.userAgent,

@@ -1,92 +1,106 @@
 "use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-    LayoutDashboard, 
-    Package, 
-    ShoppingBag, 
-    Users, 
-    User, 
-    LogOut, 
-    Store,
-    BarChart3
-} from 'lucide-react';
-import { useUserStore } from '@/hooks/useUserStore';
-import { useRouter } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Package,
+  Users,
+  User,
+  LogOut,
+  Store,
+  BarChart3,
+  History,
+} from "lucide-react";
+import { userStore } from "@/store";
+import { useRouter } from "next/navigation";
 
 export function ShopSidebar() {
-    const pathname = usePathname();
-    const router = useRouter();
-    const { logout } = useUserStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = userStore();
 
-    const menuItems = [
-        { name: 'Dashboard', href: '/shop', icon: LayoutDashboard },
-        { name: 'Analysis', href: '/shop/analysis', icon: BarChart3 },
-        { name: 'Products', href: '/shop/products', icon: Package },
-        { name: 'Orders', href: '/shop/orders', icon: ShoppingBag },
-        { name: 'Riders', href: '/shop/riders', icon: Users },
-        { name: 'Profile', href: '/shop/profile', icon: User },
-    ];
+  const menuItems = [
+    { name: "Dashboard", href: "/shop", icon: LayoutDashboard },
+    { name: "Analysis", href: "/shop/analysis", icon: BarChart3 },
+    { name: "Products", href: "/shop/products", icon: Package },
+    // { name: "Orders", href: "/shop/orders", icon: ShoppingBag },
+    { name: "History", href: "/shop/history", icon: History },
 
-    const handleLogout = async () => {
-        await logout();
-        router.push('/login');
-    };
+    { name: "Riders", href: "/shop/riders", icon: Users },
+    { name: "Profile", href: "/shop/profile", icon: User },
+  ];
 
-    return (
-        <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen fixed left-0 top-0 hidden md:flex flex-col z-30">
-            {/* Logo / Brand */}
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800">
-                <Link href="/shop" className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-yellow-500/20">
-                        <Store size={20} />
-                    </div>
-                    <div>
-                        <h1 className="font-bold text-lg text-gray-900 dark:text-white leading-none">Eazika</h1>
-                        <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Seller Hub</span>
-                    </div>
-                </Link>
-            </div>
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
-            {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-                {menuItems.map((item) => {
-                    const Icon = item.icon;
-                    // Active state logic: 
-                    // 1. Exact match for root '/shop'
-                    // 2. Prefix match for sub-pages (e.g. '/shop/products/new') but exclude root '/shop' from matching everything
-                    const isActive = item.href === '/shop' 
-                        ? pathname === '/shop'
-                        : pathname.startsWith(item.href);
-                    
-                    return (
-                        <Link 
-                            key={item.href} 
-                            href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                                isActive 
-                                ? 'bg-yellow-50 dark:bg-yellow-900/10 text-yellow-700 dark:text-yellow-400' 
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'
-                            }`}
-                        >
-                            <Icon size={20} className={isActive ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'} />
-                            {item.name}
-                        </Link>
-                    );
-                })}
-            </nav>
+  return (
+    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen fixed left-0 top-0 hidden md:flex flex-col z-30">
+      {/* Logo / Brand */}
+      <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+        <Link href="/shop" className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-yellow-500/20">
+            <Store size={20} />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg text-gray-900 dark:text-white leading-none">
+              Eazika
+            </h1>
+            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+              Seller Hub
+            </span>
+          </div>
+        </Link>
+      </div>
 
-            {/* Footer / User */}
-            <div className="p-4 border-t border-gray-100 dark:border-gray-800">
-                <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-                >
-                    <LogOut size={20} />
-                    Sign Out
-                </button>
-            </div>
-        </aside>
-    );
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          // Active state logic:
+          // 1. Exact match for root '/shop'
+          // 2. Prefix match for sub-pages (e.g. '/shop/products/new') but exclude root '/shop' from matching everything
+          const isActive =
+            item.href === "/shop"
+              ? pathname === "/shop"
+              : pathname.startsWith(item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                isActive
+                  ? "bg-yellow-50 dark:bg-yellow-900/10 text-yellow-700 dark:text-yellow-400"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200"
+              }`}
+            >
+              <Icon
+                size={20}
+                className={
+                  isActive
+                    ? "text-yellow-600 dark:text-yellow-400"
+                    : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"
+                }
+              />
+              {item.name}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Footer / User */}
+      <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+        >
+          <LogOut size={20} />
+          Sign Out
+        </button>
+      </div>
+    </aside>
+  );
 }

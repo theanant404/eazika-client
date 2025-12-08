@@ -77,7 +77,11 @@ export interface AddToCartPayload {
 export interface OrderPayload {
   addressId: number;
   paymentMethod: string;
-  items?: CartItem[];
+  orderItems: {
+    productId: number | string;
+    priceId: number | string;
+    quantity: number;
+  }[];
 }
 
 export {

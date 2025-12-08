@@ -41,7 +41,10 @@ const allCartMethods = {
   },
 
   createOrder: async (data: OrderPayload): Promise<void> => {
-    const response = await axios.post("/customers/create-order", data);
+    const response = await axios.post(
+      "/customers/create-order",
+      JSON.stringify(data)
+    );
     return response.data;
   },
 
@@ -51,10 +54,10 @@ const allCartMethods = {
   //   return response.data.data;
   // },
 
-  // getOrderById: async (orderId: number): Promise<Order> => {
-  //   const response = await axios.get(`/customers/get-order/${orderId}`);
-  //   return response.data.data;
-  // },
+  getOrderById: async (orderId: number): Promise<void> => {
+    const response = await axios.get(`/customers/get-order/${orderId}`);
+    return response.data.data;
+  },
 
   // trackOrder: async (orderId: number): Promise<TrackingDetails> => {
   //   const response = await axios.get(`/customers/track-order/${orderId}`);
