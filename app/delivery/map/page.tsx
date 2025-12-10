@@ -1,16 +1,94 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDeliveryStore } from "@/hooks/useDeliveryStore";
 import {
   GoogleMap,
   useJsApiLoader,
   DirectionsRenderer,
-  Marker
+  Marker,
 } from "@react-google-maps/api";
-import { ArrowLeft, Navigation, MapPin, Phone, CheckCircle, Package } from "lucide-react";
+import {
+  ArrowLeft,
+  Navigation,
+  Phone,
+  CheckCircle,
+  MapPin,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
+
+// --- 1. DARK MODE MAP STYLE (Blinkit/Uber Style) ---
+const darkMapStyle = [
+  { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#d59563" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#d59563" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#263c3f" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#6b9a76" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#38414e" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#212a37" }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#9ca5b3" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#746855" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#1f2835" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#f3d19c" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#17263c" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#515c6d" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#17263c" }],
+  },
+];
 
 const containerStyle = {
   width: "100%",
@@ -18,38 +96,44 @@ const containerStyle = {
 };
 
 const defaultCenter = {
-  lat: 28.6139,
-  lng: 77.2090, 
+  lat: 21.1458, // Nagpur
+  lng: 79.0882,
 };
 
 export default function DeliveryMapPage() {
   const router = useRouter();
-  // We need 'queue' for the map route, and 'activeOrder' for the bottom panel
-  const { queue, activeOrder, completeCurrentOrder, isSessionActive } = useDeliveryStore();
+  const { queue, activeOrder, completeCurrentOrder, isSessionActive } =
+    useDeliveryStore();
 
-  const [currentLocation, setCurrentLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
-  
-  // Interaction States
+  const [currentLocation, setCurrentLocation] =
+    useState<google.maps.LatLngLiteral | null>(null);
+  const [directionsResponse, setDirectionsResponse] =
+    useState<google.maps.DirectionsResult | null>(null);
+
+  // Use a Ref to control the map programmatically (for Auto-Zoom)
+  const mapRef = useRef<google.maps.Map | null>(null);
+
+  // UI States
   const [isArrived, setIsArrived] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "", 
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
     libraries: ["places"],
   });
 
-  // 1. Redirect if no session
+  // Redirect if no active session
   useEffect(() => {
     if (!isSessionActive || !activeOrder) {
-        toast.info("No active session. Redirecting to home.");
-        router.push('/delivery');
+      // Optional: Comment this out during testing if you want to stay on the page
+      // toast.info("No active session.");
+      // router.push('/delivery');
     }
   }, [isSessionActive, activeOrder, router]);
 
-  // 2. Get Location
+  // Track Location
   useEffect(() => {
     if (navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
@@ -59,42 +143,59 @@ export default function DeliveryMapPage() {
             lng: position.coords.longitude,
           });
         },
-        () => console.warn("Loc permit denied"),
+        () => console.warn("Location permission denied"),
         { enableHighAccuracy: true }
       );
       return () => navigator.geolocation.clearWatch(watchId);
     }
   }, []);
 
-  // 3. Calculate Route (OPTIMIZED FOR MULTIPLE ORDERS)
+  // --- 2. AUTO-ZOOM LOGIC (The "Smart" Camera) ---
+  useEffect(() => {
+    if (mapRef.current && currentLocation && directionsResponse) {
+      const bounds = new window.google.maps.LatLngBounds();
+
+      // Add Driver
+      bounds.extend(currentLocation);
+
+      // Add Destination (End of route)
+      const route = directionsResponse.routes[0];
+      if (route && route.legs.length > 0) {
+        const lastLeg = route.legs[route.legs.length - 1];
+        if (lastLeg.end_location) {
+          bounds.extend(lastLeg.end_location);
+        }
+      }
+
+      // Fit the map to these bounds (with some padding)
+      mapRef.current.fitBounds(bounds, {
+        top: 100,
+        bottom: 300,
+        left: 50,
+        right: 50,
+      });
+    }
+  }, [currentLocation, directionsResponse]);
+
   const calculateRoute = useCallback(async () => {
     if (!currentLocation || !window.google || queue.length === 0) return;
 
     const directionsService = new window.google.maps.DirectionsService();
 
-    // Logic:
-    // If we have > 1 order, we use Waypoints to optimize.
-    // Origin: Driver
-    // Destination: The LAST order in the list (you can logic this differently if needed)
-    // Waypoints: Everyone else
-    
     let destinationAddress = "";
     let waypoints: google.maps.DirectionsWaypoint[] = [];
 
     if (queue.length === 1) {
-        // Simple A -> B
-        destinationAddress = queue[0].deliveryAddress || "";
+      destinationAddress = queue[0].deliveryAddress || "";
     } else {
-        // A -> B -> C -> D (Optimized)
-        // We pick the last one in the array as the "final" destination for the API call
-        const lastOrder = queue[queue.length - 1];
-        destinationAddress = lastOrder.deliveryAddress || "";
-
-        const intermediateOrders = queue.slice(0, queue.length - 1);
-        waypoints = intermediateOrders.map(order => ({
-            location: order.deliveryAddress,
-            stopover: true
-        }));
+      // Optimize: Last order is destination, others are waypoints
+      const lastOrder = queue[queue.length - 1];
+      destinationAddress = lastOrder.deliveryAddress || "";
+      const intermediateOrders = queue.slice(0, queue.length - 1);
+      waypoints = intermediateOrders.map((order) => ({
+        location: order.deliveryAddress,
+        stopover: true,
+      }));
     }
 
     try {
@@ -102,32 +203,28 @@ export default function DeliveryMapPage() {
         origin: currentLocation,
         destination: destinationAddress,
         waypoints: waypoints,
-        optimizeWaypoints: true, // <--- ENABLES 4-5 ORDER OPTIMIZATION
+        optimizeWaypoints: true,
         travelMode: google.maps.TravelMode.DRIVING,
       });
       setDirectionsResponse(results);
-      
-      // OPTIONAL: You can inspect 'results.routes[0].waypoint_order' 
-      // to see the optimized order indices and update your store if needed.
-      
     } catch (error) {
       console.error("Route Error:", error);
     }
   }, [currentLocation, queue]);
 
-  // Trigger calculation
   useEffect(() => {
     if (isLoaded && currentLocation && queue.length > 0) {
       calculateRoute();
     }
   }, [isLoaded, currentLocation, queue, calculateRoute]);
 
-  // 4. Handlers
   const handleOpenMapsApp = () => {
     if (!activeOrder) return;
     const query = encodeURIComponent(activeOrder.deliveryAddress || "");
-    // Opens external Google Maps app for turn-by-turn navigation
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${query}`,
+      "_blank"
+    );
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -135,36 +232,36 @@ export default function DeliveryMapPage() {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-
     if (value && index < 3) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
+      document.getElementById(`otp-${index + 1}`)?.focus();
     }
   };
 
   const handleCompleteOrder = async () => {
     const code = otp.join("");
     if (code.length !== 4) {
-        toast.error("Please enter the 4-digit OTP");
-        return;
+      toast.error("Enter valid 4-digit OTP");
+      return;
     }
-
     setIsSubmitting(true);
     const success = await completeCurrentOrder(code);
     setIsSubmitting(false);
 
     if (success) {
-        toast.success("Order Delivered Successfully!");
-        setOtp(["", "", "", ""]);
-        setIsArrived(false);
-        // The store will remove this order from 'queue'.
-        // The 'useEffect' above will see 'queue' changed and Re-Calculate the route for remaining orders!
+      toast.success("Delivery Completed!");
+      setOtp(["", "", "", ""]);
+      setIsArrived(false);
     } else {
-        toast.error("Invalid OTP. Try '1234'");
+      toast.error("Invalid OTP");
     }
   };
 
-  if (!isLoaded || !activeOrder) return <div className="h-screen bg-gray-900 text-white flex items-center justify-center">Loading Mission Control...</div>;
+  if (!isLoaded || !activeOrder)
+    return (
+      <div className="h-screen bg-gray-900 flex items-center justify-center text-green-500 font-bold animate-pulse">
+        Locating Satellites...
+      </div>
+    );
 
   return (
     <div className="h-full w-full relative bg-gray-900">
@@ -172,17 +269,45 @@ export default function DeliveryMapPage() {
         mapContainerStyle={containerStyle}
         center={currentLocation || defaultCenter}
         zoom={15}
-        options={{ disableDefaultUI: true, styles: [/* Add dark styles here if needed */] }}
+        onLoad={(map) => {
+          mapRef.current = map;
+        }} // Capture map instance
+        options={{
+          disableDefaultUI: true,
+          styles: darkMapStyle, // Apply Dark Mode
+        }}
       >
-        {currentLocation && <Marker position={currentLocation} />}
-        
+        {/* --- 3. CUSTOM MARKERS --- */}
+
+        {/* RIDER MARKER (Bike Icon) */}
+        {currentLocation && (
+          <Marker
+            position={currentLocation}
+            icon={{
+              url: "https://cdn-icons-png.flaticon.com/512/3755/3755376.png", // 3D Delivery Bike Icon
+              scaledSize: new window.google.maps.Size(50, 50),
+              anchor: new window.google.maps.Point(25, 25),
+            }}
+          />
+        )}
+
+        {/* CUSTOMER MARKER (House/Pin) - We infer this from the route end location if available, or rely on DirectionsRenderer default */}
+        {/* Note: DirectionsRenderer puts generic markers A, B, C. 
+            To hide them and put custom ones, set suppressMarkers: true in options below, 
+            then manually map over 'queue' to place <Marker /> components. 
+        */}
+
         {directionsResponse && (
-          <DirectionsRenderer 
-            options={{ 
-                directions: directionsResponse, 
-                polylineOptions: { strokeColor: "#22c55e", strokeWeight: 6 },
-                suppressMarkers: false // Keeps A, B, C markers visible
-            }} 
+          <DirectionsRenderer
+            options={{
+              directions: directionsResponse,
+              suppressMarkers: false, // Keep default letter markers for multi-stop logic
+              polylineOptions: {
+                strokeColor: "#22c55e", // Blinkit Green
+                strokeWeight: 6,
+                strokeOpacity: 0.8,
+              },
+            }}
           />
         )}
       </GoogleMap>
@@ -190,85 +315,93 @@ export default function DeliveryMapPage() {
       {/* Top Bar */}
       <div className="absolute top-0 left-0 right-0 p-4 pt-safe-top z-10 pointer-events-none">
         <div className="flex justify-between items-start pointer-events-auto">
-            <button onClick={() => router.back()} className="bg-gray-900/90 p-3 rounded-full text-white shadow-lg">
-                <ArrowLeft size={20} />
-            </button>
-            <div className="bg-gray-900/90 px-4 py-2 rounded-full text-white font-bold text-sm shadow-lg flex items-center gap-2">
-                <Navigation size={14} className="text-green-500" />
-                {queue.length} Stops Left
-            </div>
+          <button
+            onClick={() => router.back()}
+            className="bg-gray-900/90 backdrop-blur-md p-3 rounded-full text-white shadow-lg border border-gray-700"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div className="bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full text-white font-bold text-sm shadow-lg flex items-center gap-2 border border-gray-700">
+            <Navigation size={14} className="text-green-500" />
+            {queue.length} Stops
+          </div>
         </div>
       </div>
 
-      {/* Bottom Panel - FOCUSED ON ACTIVE ORDER */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-3xl p-6 z-20 border-t border-gray-800 shadow-2xl">
+      {/* Bottom Panel */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-3xl p-6 z-20 border-t border-gray-800 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="w-12 h-1.5 bg-gray-700 rounded-full mx-auto mb-6" />
 
-        {/* Active Order Info */}
         <div className="flex justify-between items-start mb-6">
-            <div>
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-green-500 text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded-full">CURRENT STOP</span>
-                </div>
-                <h2 className="text-white font-bold text-xl">{activeOrder.customerName || "Customer"}</h2>
-                <p className="text-gray-400 text-sm mt-1 max-w-[200px] truncate">{activeOrder.deliveryAddress}</p>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-green-500 text-gray-900 text-[10px] font-extrabold px-2 py-0.5 rounded-sm tracking-wider">
+                LIVE ORDER
+              </span>
             </div>
-            <div className="flex gap-3">
-                <button className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-green-500 hover:bg-gray-700 transition-colors">
-                    <Phone size={20} />
-                </button>
+            <h2 className="text-white font-bold text-2xl">
+              {activeOrder.customerName || "Customer"}
+            </h2>
+            <div className="flex items-center gap-1 mt-1 text-gray-400">
+              <MapPin size={14} />
+              <p className="text-sm truncate max-w-[250px]">
+                {activeOrder.deliveryAddress}
+              </p>
             </div>
+          </div>
+          <button className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center text-green-500 border border-gray-700 shadow-lg active:scale-95 transition-transform">
+            <Phone size={24} />
+          </button>
         </div>
 
-        {/* Action Buttons */}
         {!isArrived ? (
-            <div className="grid grid-cols-4 gap-3">
-                 <button 
-                    onClick={handleOpenMapsApp}
-                    className="col-span-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 rounded-xl flex items-center justify-center transition-colors"
-                >
-                    <Navigation size={20} />
-                </button>
-                <button 
-                    onClick={() => setIsArrived(true)}
-                    className="col-span-3 bg-green-500 hover:bg-green-600 text-gray-900 font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95"
-                >
-                    I've Arrived at Location
-                </button>
-            </div>
+          <div className="grid grid-cols-5 gap-3">
+            <button
+              onClick={handleOpenMapsApp}
+              className="col-span-1 bg-gray-800 border border-gray-700 text-white font-bold rounded-xl flex items-center justify-center active:scale-95 transition-transform"
+            >
+              <Navigation size={22} className="text-blue-400" />
+            </button>
+            <button
+              onClick={() => setIsArrived(true)}
+              className="col-span-4 bg-green-500 text-gray-900 font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 active:scale-95 transition-transform text-lg"
+            >
+              Slide to Arrive &nbsp; &rarr;
+            </button>
+          </div>
         ) : (
-            <div className="space-y-4 animate-in slide-in-from-bottom-4">
-                <div className="text-center mb-2">
-                    <p className="text-white font-bold mb-4">Ask Customer for OTP</p>
-                    <div className="flex justify-center gap-3">
-                        {otp.map((digit, i) => (
-                            <input
-                                key={i}
-                                id={`otp-${i}`}
-                                type="tel" 
-                                maxLength={1}
-                                value={digit}
-                                onChange={(e) => handleOtpChange(i, e.target.value)}
-                                className="w-14 h-14 bg-gray-800 border-2 border-gray-700 rounded-xl text-center text-2xl font-bold text-white focus:border-green-500 focus:outline-none transition-colors"
-                            />
-                        ))}
-                    </div>
-                </div>
-                <button 
-                    onClick={handleCompleteOrder}
-                    disabled={isSubmitting}
-                    className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
-                >
-                    {isSubmitting ? <span className="animate-spin">⌛</span> : <CheckCircle size={20} />}
-                    Verify & Complete Delivery
-                </button>
-                <button 
-                    onClick={() => setIsArrived(false)}
-                    className="w-full text-gray-500 text-xs font-medium py-2 hover:text-white transition-colors"
-                >
-                    Wait, I haven't arrived yet
-                </button>
+          <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className="text-center">
+              <p className="text-gray-400 text-sm font-medium mb-4 uppercase tracking-widest">
+                Enter Delivery OTP
+              </p>
+              <div className="flex justify-center gap-4">
+                {otp.map((digit, i) => (
+                  <input
+                    key={i}
+                    id={`otp-${i}`}
+                    type="tel"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    className="w-14 h-16 bg-gray-800 border-2 border-gray-700 rounded-2xl text-center text-3xl font-bold text-white focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all shadow-inner"
+                  />
+                ))}
+              </div>
             </div>
+            <button
+              onClick={handleCompleteOrder}
+              disabled={isSubmitting}
+              className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-green-500/20 active:scale-95 transition-transform"
+            >
+              {isSubmitting ? (
+                <span className="animate-spin">⌛</span>
+              ) : (
+                <CheckCircle size={22} />
+              )}
+              <span className="text-lg">Complete Delivery</span>
+            </button>
+          </div>
         )}
       </div>
     </div>
