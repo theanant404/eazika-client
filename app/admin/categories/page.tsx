@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AdminService, ProductCategory } from "@/services/adminService";
+import { AdminService } from "@/services/adminService";
 import { Plus, Tag, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+
+interface ProductCategory {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
