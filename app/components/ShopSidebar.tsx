@@ -22,7 +22,7 @@ export function ShopSidebar() {
 
   const menuItems = [
     { name: "Dashboard", href: "/shop", icon: LayoutDashboard },
-    { name: "Analysis", href: "/shop/analysis", icon: BarChart3 },
+    // { name: "Analysis", href: "/shop/analysis", icon: BarChart3 },
     { name: "Products", href: "/shop/products", icon: Package },
     // { name: "Orders", href: "/shop/orders", icon: ShoppingBag },
     { name: "History", href: "/shop/history", icon: History },
