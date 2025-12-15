@@ -1,23 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ChevronLeft,
-  Phone,
-  Lock,
-  ArrowRight,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { ChevronLeft, Phone, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { userService } from "@/services/userService";
-import { userStore } from "@/store";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
-  // const { setAuthToken } = userStore();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect");
 
   const [step, setStep] = useState<1 | 2>(1);
   const [phone, setPhone] = useState("");
@@ -25,18 +20,7 @@ export default function LoginPage() {
   const [requestId, setRequestId] = useState("");
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
-  const [errorMessage, setErrorMessage] = useState("");
 
-  // Clear session on load
-  // useEffect(() => {
-  //   logout();
-  //   localStorage.removeItem("accessToken");
-  //   // Clear cookies too
-  //   document.cookie = "accessToken=; path=/; max-age=0";
-  //   document.cookie = "userRole=; path=/; max-age=0";
-  // }, []);
-
-  // Timer logic
   useEffect(() => {
     router.refresh();
     let interval: NodeJS.Timeout;
@@ -45,7 +29,6 @@ export default function LoginPage() {
     }
     return () => clearInterval(interval);
   }, [step, timer, router]);
-
   // Helper to set cookies for Middleware
   const setAuthCookies = (token: string, role: string) => {
     const maxAge = 7 * 24 * 60 * 60; // 7 days
@@ -55,12 +38,9 @@ export default function LoginPage() {
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage("");
-
-    // Basic Validation
     const cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length !== 10) {
-      setErrorMessage("Please enter a valid 10-digit mobile number");
+      toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
 
@@ -74,14 +54,12 @@ export default function LoginPage() {
         setStep(2);
         setTimer(30);
       } else {
-        setErrorMessage(data.message || "Failed to send OTP.");
+        toast.error(data.message || "Failed to send OTP.");
+        return;
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("An unknown error occurred.");
-      }
+      if (error instanceof Error)
+        toast.error(error.message || "Failed to send OTP.");
     } finally {
       setLoading(false);
     }
@@ -89,9 +67,7 @@ export default function LoginPage() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage("");
     setLoading(true);
-
     try {
       const data = await userService.verifyLogin({
         phone: phone.replace(/\D/g, ""),
@@ -109,24 +85,24 @@ export default function LoginPage() {
         // setAuthToken(token);
         if (user) await localStorage.setItem("user", JSON.stringify(user));
 
-        // 2. Update Cookies (For Middleware Route Protection)
         await setAuthCookies(token, role);
 
-        // 3. Redirect based on role
-        if (role === "admin") router.push("/admin");
+        if (redirectPath) {
+          router.push(redirectPath);
+        } else if (role === "admin") router.push("/admin");
         else if (role === "shopkeeper") router.push("/shop");
         else if (role === "delivery_boy") router.push("/delivery");
         else router.push("/");
+        toast.success("Logged in successfully!");
         router.refresh();
       } else {
-        setErrorMessage(data.message || "Invalid OTP.");
+        toast.error(data.message || "Invalid OTP.");
+        return;
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("An unknown error occurred.");
-      }
+      if (error instanceof Error)
+        toast.error(error.message || "Failed to verify OTP.");
+      return;
     } finally {
       setLoading(false);
     }
@@ -134,18 +110,14 @@ export default function LoginPage() {
 
   const handleResend = async () => {
     if (timer > 0) return;
-    setErrorMessage("");
     setLoading(true);
     try {
       await userService.resendLoginOtp(phone.replace(/\D/g, ""), requestId);
       setTimer(30);
-      alert("OTP Resent Successfully!");
+      toast.success("OTP resent successfully!");
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("An unknown error occurred.");
-      }
+      if (error instanceof Error)
+        toast.error(error.message || "Failed to resend OTP.");
     } finally {
       setLoading(false);
     }
@@ -158,7 +130,6 @@ export default function LoginPage() {
       className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl border border-yellow-100 dark:border-yellow-900/20 w-full relative overflow-hidden"
     >
       <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-
       <div className="mb-8 text-center relative z-10">
         <Link
           href="/"
@@ -175,22 +146,6 @@ export default function LoginPage() {
             : `OTP sent to +91 ${phone}`}
         </p>
       </div>
-
-      <AnimatePresence>
-        {errorMessage && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-start gap-2"
-          >
-            <AlertCircle className="text-red-500 w-5 h-5 mt-0.5 shrink-0" />
-            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-              {errorMessage}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {step === 1 ? (

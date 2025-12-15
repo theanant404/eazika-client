@@ -59,7 +59,6 @@ export const userService = {
 
   getMe: async (): Promise<User> => {
     const response = await axios.get("/users/user");
-    // console.log("getMe response:", response.data.data);
     return response.data.data.user;
   },
 
@@ -79,7 +78,7 @@ export const userService = {
 
   updateProfilePicture: async (imageUrl: string) => {
     const response = await axios.patch("/users/user/update-profile-picture", {
-      imageUrl: imageUrl, 
+      imageUrl: imageUrl,
     });
     return response.data;
   },

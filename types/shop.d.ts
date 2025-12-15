@@ -10,7 +10,7 @@ interface CreateShopPayload {
     businessCertificateImage: string;
     panImage: string;
   };
-  bankDetail: {
+  bankDetail?: {
     accountHolderName: string;
     accountNumber: string;
     ifscCode: string;
@@ -26,7 +26,7 @@ interface ProductPriceType {
   discount?: number;
   weight: number;
   unit: "grams" | "kg" | "ml" | "litre" | "piece";
-  currency: string;
+  currency?: string;
 }
 interface NewProductFormData {
   productCategoryId: number;
