@@ -51,7 +51,7 @@ export default function NewProductPage() {
     async function fetchCategories() {
       try {
         const categories = await shopService.getCategories();
-        console.log("Fetched categories:", categories);
+
         srtCategory(categories);
       } catch (error) {
         console.error("Failed to fetch categories", error);

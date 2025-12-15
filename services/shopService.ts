@@ -265,7 +265,7 @@ export const ShopService = {
   // --- ORDER MANAGEMENT ---
   getShopOrders: async (page: number | string, limit: number | string) => {
     const response = await axios.get(
-      `/shops/get-shop-orders?page=${page}&limit=${limit}`
+      `/shops/orders/get-current-orders?page=${page}&limit=${limit}`
     );
     return response.data.data;
   },
