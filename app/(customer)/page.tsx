@@ -46,7 +46,15 @@ export default function HomePage() {
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([
+    {
+      id: 0,
+      name: "Loading",
+      slug: "loading",
+      icon: undefined,
+      image: undefined,
+    },
+  ]);
   const [products, setProducts] = useState<ProductType[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,7 +75,8 @@ export default function HomePage() {
       setIsLoading(true);
       try {
         const [catsData, prodsData] = await Promise.all([
-          ShopService.getCategories(),
+          // ShopService.getCategories(),
+          [],
           // PASS CITY TO API
           await coustomerService.getProducts(1, 20, currentCity),
         ]);
@@ -86,7 +95,7 @@ export default function HomePage() {
           };
         });
 
-        setCategories(mappedCategories);
+        // setCategories(mappedCategories);
         setProducts(prodsData.products);
       } catch (error) {
         console.error("Failed to load home data", error);
