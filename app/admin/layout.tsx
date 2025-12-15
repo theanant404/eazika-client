@@ -17,6 +17,7 @@ import {
   LogOut,
   ShieldCheck,
   Map, // Added Map Icon
+  Package,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -37,6 +38,7 @@ export default function AdminLayout({
   const menuItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Live Map", href: "/admin/map", icon: Map }, // Added Map Link
+    { name: "Global Products", href: "/admin/products/add", icon: Package }, // Added Global Products Link
     { name: "Manage Shops", href: "/admin/shops", icon: Store },
     { name: "Manage Riders", href: "/admin/riders", icon: Bike },
     { name: "Notifications", href: "/admin/notification", icon: Bell },

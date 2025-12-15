@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { mockOrders, orderVolumeData } from '@/app/data/adminMock';
 import { AdminChart } from '@/app/components/admin/AdminChart';
 import { 
@@ -32,12 +32,31 @@ const getStatusColor = (status: string) => {
     }
 };
 
+import { AdminService } from "@/services/adminService";
+
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<typeof mockOrders[0] | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+
+  useEffect(() => {
+    fetchOrders();
+  },[]);
+
+  const fetchOrders = async () => {
+    try {
+        setLoading(true);
+        const data = await AdminService.getAllOrders();
+        setOrders(data);
+    } catch(err) {
+        console.error("Failed to fetch orders", err);
+    } finally {
+        setLoading(false);
+    }
+  };
 
   // Filter Logic
   const filteredOrders = orders.filter(order => {
@@ -251,7 +270,7 @@ export default function AdminOrdersPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                        {getMockItems().map((item, idx) => (
+                                        {selectedOrder.items?.map((item: any, idx: number) => (
                                             <tr key={idx}>
                                                 <td className="px-4 py-3 text-gray-800 dark:text-gray-200">{item.name}</td>
                                                 <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{item.qty}</td>

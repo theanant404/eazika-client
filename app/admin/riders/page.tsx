@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { mockRiders } from '@/app/data/adminMock';
 import { AdminChart } from '@/app/components/admin/AdminChart';
 import { 
@@ -47,30 +47,41 @@ const mockRiderHistory = [
     { id: '#ORD-9844', date: 'Nov 20, 4:45 PM', amount: '₹320', status: 'Cancelled' },
 ];
 
+import { AdminService } from "@/services/adminService";
+
 export default function AdminRidersPage() {
-  const [riders, setRiders] = useState(mockRiders);
+  const [riders, setRiders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [globalChartRange, setGlobalChartRange] = useState('7'); // For main page chart
-  const [selectedRider, setSelectedRider] = useState<typeof mockRiders[0] | null>(null);
+  const [selectedRider, setSelectedRider] = useState<any | null>(null);
+
+  useEffect(() => {
+    fetchRiders();
+  }, []);
+
+  const fetchRiders = async () => {
+    try {
+        setLoading(true);
+        const data = await AdminService.getAllRiders();
+        setRiders(data);
+    } catch(err) {
+        console.error("Failed to fetch riders", err);
+    } finally {
+        setLoading(false);
+    }
+  };
   
   // Modal States
   const [modalTab, setModalTab] = useState<'overview' | 'analytics' | 'history' | 'docs'>('overview');
   const [modalChartRange, setModalChartRange] = useState<'7' | '30' | '365'>('7');
 
   const handleSuspendToggle = (id: number) => {
-     setRiders(prev => prev.map(r => {
-         if (r.id === id) {
-             const newStatus = r.status === 'suspended' ? 'available' : 'suspended';
-             return { ...r, status: newStatus as any };
-         }
-         return r;
-     }));
-     if (selectedRider && selectedRider.id === id) {
-         setSelectedRider(prev => prev ? { ...prev, status: prev.status === 'suspended' ? 'available' : 'suspended' as any } : null);
-     }
+     // Implement suspend logic if backend supports it. For now just optimistic UI update or alert.
+     alert("Suspend feature not yet connected to backend.");
   };
 
-  const openRiderModal = (rider: typeof mockRiders[0]) => {
+  const openRiderModal = (rider: any) => {
       setSelectedRider(rider);
       setModalTab('overview'); // Reset tab
       setModalChartRange('7'); // Reset chart

@@ -60,16 +60,7 @@ export default function EditProfilePage() {
     }
   };
 
-  // Mock function to simulate file upload - Replace with actual upload logic
-  const uploadImageToCloud = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Return a fake URL for now (or implement FormData upload here)
-        console.log("Uploading file:", file.name);
-        resolve("https://placehold.co/600x600?text=New+Avatar");
-      }, 1500);
-    });
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,18 +69,21 @@ export default function EditProfilePage() {
     try {
       // 1. Handle Image Upload if a new file was selected
       if (imageFile) {
-        // In a real app, you would upload the 'imageFile' to S3/Cloudinary here
-        const imageUrl = await uploadImageToCloud(imageFile);
+        // Upload image to server
+        const imageUrl = await userService.uploadImage(imageFile);
 
         // Call API to update the image URL
         await userService.updateProfilePicture(imageUrl);
       }
 
       // 2. Update Text Profile Data
-      // await updateUser({
-      //   name: formData.name || "",
-      //   email: formData.email || "",
-      // });
+      if (user) {
+        await updateUser({
+          ...user, // Keep existing fields
+          name: formData.name || "",
+          email: formData.email || undefined,
+        });
+      }
 
       // 3. Refresh local data to ensure sync
       await fetchUser();

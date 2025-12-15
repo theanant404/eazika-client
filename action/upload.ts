@@ -24,7 +24,6 @@ export const uploadImage = async (file: File) => {
     );
     if (!uploadResponse.success)
       return { success: false, error: uploadResponse.error };
-
     return { success: true, url: publicUrl };
   } catch (error) {
     console.error("Error in uploadImage:", error);
@@ -137,7 +136,6 @@ async function getSignedUploadUrlsForMultiple(
 
     const data = await response.json();
 
-    console.log("Signed URLs response data:", data);
     return { success: true, data: data.files };
   } catch (error) {
     console.error("Error getting signed URLs:", error);

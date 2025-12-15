@@ -52,6 +52,10 @@ const allCartMethods = {
     const response = await axios.get(`/customers/get-order/${orderId}`);
     return response.data.data;
   },
+  trackOrder: async (orderId: number): Promise<any> => {
+    const response = await axios.get(`/customers/track-order/${orderId}`);
+    return response.data.data;
+  },
 };
 
 const coustomerServices = {

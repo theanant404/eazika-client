@@ -44,7 +44,6 @@ const fetchCartData = async (set: Set) => {
   set({ isLoading: true });
   try {
     const data = await cartMethods.getCart();
-    console.log("Fetched cart data:", data);
     const cartItems = Array.isArray(data) ? data : [];
 
     set({

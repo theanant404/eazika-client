@@ -1,6 +1,6 @@
 import axiosInstance from "@/lib/axios";
 import axios from "@/lib/axios";
-import { ProductDetailType } from "@/types";
+
 import type {
   CreateShopPayload,
   NewProductFormData,
@@ -9,19 +9,6 @@ import type {
   GlobalProductListType,
   OrderDetail,
 } from "@/types/shop";
-
-// Added imports for the specific icons requested
-import {
-  ShoppingBasket,
-  Smartphone,
-  Sofa,
-  Shirt,
-  Cake,
-  Refrigerator,
-  Boxes,
-} from "lucide-react";
-
-// --- Interfaces ---
 
 export interface ShopProfile extends CreateShopPayload {
   id: number;
@@ -127,14 +114,14 @@ export interface UserProfile {
   role: string;
 }
 
-// export interface Category {
-//   id: number | string;
-//   name: string;
-//   slug: string;
-//   image?: string;
-//   icon?: any;
-//   itemCount?: number;
-// }
+export interface Category {
+  id: number | string;
+  name: string;
+  slug: string;
+  image?: string;
+  icon?: any;
+  itemCount?: number;
+}
 
 export interface ShopAnalytics {
   revenueChart: { label: string; value: number }[];
@@ -192,7 +179,8 @@ export const ShopService = {
       return response.data;
     } catch (error) {
       console.warn(
-        "Access denied or Endpoint Missing (Inventory). Returning Empty."
+        "Access denied or Endpoint Missing (Inventory). Returning Empty.",
+        error
       );
       return [];
     }
@@ -205,7 +193,8 @@ export const ShopService = {
       );
       return response.data;
     } catch (error) {
-      console.warn(`Product ${id} not found. Returning placeholder.`);
+      console.warn(`Product ${id} not found. Returning placeholder.`, error);
+
       return {
         id: id,
         name: "Product Not Found",
@@ -282,10 +271,7 @@ export const ShopService = {
   },
 
   getShopOrderById: async (id: number | string): Promise<OrderDetail> => {
-    // const response = await axios.get(`/shops/orders/order/${id}`);
     const response = await axios.get(`/shops/orders/order/${id}`);
-    console.log("Order Detail Response:", response);
-    // order:orderId
     return response.data.data.order;
   },
 
@@ -294,10 +280,18 @@ export const ShopService = {
     status: OrderDetail["status"],
     rider: number | string | null = null
   ) => {
-    const response = await axios.put(`/shops/orders/order/status/${id}`, {
-      // /shops/orders/order/status/1
+    // If rider is provided, use assign-order
+    if (rider) {
+      const response = await axiosInstance.post(`/shops/assign-order`, {
+        orderId: id,
+        deliveryBoyId: rider,
+      });
+      return response.data.data;
+    }
+
+    const response = await axios.patch(`/shops/update-order-status`, {
+      orderId: id,
       status,
-      rider,
     });
     return response.data.data;
   },
@@ -323,13 +317,13 @@ export const ShopService = {
     return response.data;
   },
 
-  // assignRider: async (orderId: OrderDetail["id"], riderId: number | string) => {
-  //   const response = await axiosInstance.post(
-  //     `/shops/orders/${orderId}/assign`,
-  //     { riderId }
-  //   );
-  //   return response.data.data;
-  // },
+  assignRider: async (orderId: number | string, riderId: number | string) => {
+    const response = await axiosInstance.post(`/shops/assign-order`, {
+      orderId,
+      deliveryBoyId: riderId,
+    });
+    return response.data.data;
+  },
 
   removeRider: async (riderId: number) => {
     const response = await axiosInstance.delete(`/shops/riders/${riderId}`);

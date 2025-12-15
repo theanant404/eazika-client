@@ -40,7 +40,6 @@ const fetchUserData = async (set: Set) => {
   set({ isLoading: true });
   try {
     const data = await userService.getMe();
-    console.log("Fetched User Data:", data);
     set({ user: data, isAuthenticated: true, addresses: data.addresses || [] });
   } finally {
     set({ isLoading: false });

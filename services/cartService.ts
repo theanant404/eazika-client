@@ -56,6 +56,8 @@ export interface TrackingDetails {
     phone: string;
     vehicle?: string;
     rating?: number;
+    currentLat?: number;
+    currentLng?: number;
   };
 }
 
@@ -119,17 +121,17 @@ export const CartService = {
   },
 
   getOrderById: async (orderId: number) => {
-    const response = await axiosInstance.get<Order>(
+    const response = await axiosInstance.get<any>(
       `/customers/get-order/${orderId}`
     );
-    return response.data;
+    return response.data.data;
   },
 
   trackOrder: async (orderId: number) => {
-    const response = await axiosInstance.get<TrackingDetails>(
+    const response = await axiosInstance.get<any>(
       `/customers/track-order/${orderId}`
     );
-    return response.data;
+    return response.data.data;
   },
 
   cancelOrder: async (orderId: number, reason: string) => {

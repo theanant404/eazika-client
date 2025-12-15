@@ -12,17 +12,36 @@ const axiosInstance = axios.create({
 });
 
 async function getToken(tokenName: string): Promise<string | null> {
+  // 1. Try reading from cookieStore (Modern Browsers)
   try {
-    return (
-      (await cookieStore.get(tokenName))?.value ||
-      localStorage.getItem(tokenName)
-    );
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error getting token:", error.message);
+    if (typeof cookieStore !== 'undefined') {
+        const cookie = await cookieStore.get(tokenName);
+        if (cookie?.value) return cookie.value;
     }
-    return null;
+  } catch (e) {
+    // Ignore error, proceed to next method
   }
+
+  // 2. Try reading from document.cookie (Fallback)
+  try {
+      if (typeof document !== 'undefined') {
+          const match = document.cookie.match(new RegExp('(^| )' + tokenName + '=([^;]+)'));
+          if (match) return match[2];
+      }
+  } catch (e) {
+      // Ignore
+  }
+
+  // 3. Try reading from localStorage (Fallback)
+  try {
+      if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem(tokenName);
+      }
+  } catch (e) {
+      // Ignore
+  }
+  
+  return null;
 }
 // --- REQUEST INTERCEPTOR ---
 axiosInstance.interceptors.request.use(

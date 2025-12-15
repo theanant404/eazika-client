@@ -17,6 +17,11 @@ export const AdminService = {
     return response.data.data;
   },
 
+  getLiveMapData: async () => {
+    const response = await axiosInstance.get("/admin/map/live-data");
+    return response.data.data;
+  },
+
   
   getAllUsers: async (page = 1, limit = 10) => {
     const response = await axiosInstance.get(`/admin/users/get-all-users`, {
@@ -40,6 +45,16 @@ export const AdminService = {
         status,
       }
     );
+    return response.data.data;
+  },
+
+  getAllRiders: async () => {
+    const response = await axiosInstance.get(`/admin/riders/get-all`);
+    return response.data.data;
+  },
+
+  getAllOrders: async () => {
+    const response = await axiosInstance.get(`/admin/orders/get-all`);
     return response.data.data;
   },
 

@@ -7,8 +7,8 @@ export interface CreateDeliveryProfilePayload {
   aadharNumber: string;
   panNumber: string;
   licenseNumber: string;
-  licenseImage: string[];
-  vechicleOwnerName: string;
+  licenseImages: string[];
+  vehicleOwnerName: string;
   vehicleName: string;
   vehicleNo: string;
 }
@@ -31,7 +31,7 @@ export interface DeliveryProfile {
   panNumber: string;
   licenseNumber: string;
   licenseImage: string[];
-  vechicleOwnerName: string;
+  vehicleOwnerName: string;
   vehicleName: string;
   vehicleNo: string;
   createdAt: string;
@@ -85,9 +85,15 @@ export const DeliveryService = {
     return response.data;
   },
 
-  // Assumed Endpoint: PUT /delivery/orders/{id}/status
+  // PATCH /delivery/update-order-status
   updateOrderStatus: async (orderId: number, status: string) => {
-    const response = await axiosInstance.put(`/delivery/orders/${orderId}/status`, { status });
+    const response = await axiosInstance.patch(`/delivery/update-order-status`, { orderId, status });
+    return response.data;
+  },
+
+  // PATCH /delivery/update-location
+  updateLocation: async (lat: number, lng: number) => {
+    const response = await axiosInstance.patch('/delivery/update-location', { lat, lng });
     return response.data;
   },
 

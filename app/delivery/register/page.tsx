@@ -133,25 +133,9 @@ export default function DeliveryRegistrationPage() {
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
-        // 1. Get Signed URL
-        const { data: signedUrlData } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v2"}/uploads/avatar`, 
-          {
-            fileName: `delivery-license-${Date.now()}-${file.name}`,
-            contentType: file.type,
-          },
-            { withCredentials: true }
-        );
-
-        const { signedUrl, publicUrl } = signedUrlData;
-
-        // 2. Upload File to GCS
-        await axios.put(signedUrl, file, {
-          headers: { "Content-Type": file.type },
-        });
-
-        uploadedUrls.push(publicUrl);
+        // Use DeliveryService to upload
+        const url = await DeliveryService.uploadImage(file);
+        uploadedUrls.push(url);
       }
       
       setFormData((prev) => ({
@@ -188,18 +172,18 @@ export default function DeliveryRegistrationPage() {
 
     setIsSubmitting(true);
     try {
-      await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v2"}/delivery/create-delivery-profile`,
-          {
-            ...formData,
-            shopkeeperId: selectedShopId,
-          },
-          { withCredentials: true }
-      );
+      // Use DeliveryService to create profile
+      await DeliveryService.createProfile({
+          ...formData,
+          shopkeeperId: selectedShopId
+      });
+
+      // Update cookie to 'delivery_boy' manually so they can access dashboard immediately
+      // The backend updates the role in DB, but client-side cookie needs update for Middleware to pass
+      document.cookie = `userRole=delivery_boy; path=/; max-age=${7 * 24 * 60 * 60}`;
+      
       toast.success("Delivery profile created successfully!");
-      // router.push("/delivery/profile"); // Redirect to profile or dashboard
-      // Maybe push to a success/pending page
-      router.push("/delivery/profile");
+      router.push("/delivery"); // Redirect to dashboard
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.response?.data?.message || "Registration failed");

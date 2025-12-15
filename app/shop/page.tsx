@@ -168,7 +168,9 @@ export default function ShopDashboard() {
         <div className="flex-1 flex flex-col">
           {currentOders.orders.length > 0 ? (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {currentOders.orders.map((order) => (
+              {currentOders.orders
+                .filter(order => order.status !== 'delivered' && order.status !== 'cancelled')
+                .map((order) => (
                 <Link
                   href={`shop/order/${order.id}`}
                   key={order.id}

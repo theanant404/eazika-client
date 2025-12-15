@@ -38,7 +38,6 @@ export default function ShopRegistrationPage() {
     shopImages: [],
     fssaiNumber: "",
     gstNumber: "",
-
     documents: {
       aadharImage: "",
       electricityBillImage: "",
