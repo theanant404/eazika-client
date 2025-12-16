@@ -97,14 +97,38 @@ export const DeliveryService = {
     return response.data;
   },
 
-  // Assumed Endpoint: POST /upload
+  // Endpoint: POST /uploads/avatar -> getSignedUrl
   uploadImage: async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await axiosInstance.post<{ url: string }>('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data.url;
+    try {
+        const fileName = `rider-doc-${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+        const contentType = file.type || 'application/octet-stream';
+
+        // 1. Get Signed URL
+        // We use /uploads/avatar because it maps to the generic getSignedUrl controller on the server
+        const { data } = await axiosInstance.post<{ signedUrl: string, publicUrl: string }>('/uploads/avatar', {
+            fileName,
+            contentType
+        });
+
+        // 2. Direct Upload to GCS (bypass interceptors)
+        // We use fetch here to ensure no extra headers are sent
+        const uploadResponse = await fetch(data.signedUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': contentType,
+            },
+            body: file
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        }
+
+        return data.publicUrl;
+    } catch (error) {
+        console.error("Image upload failed", error);
+        throw error;
+    }
   },
 
   // Assumed Endpoint: PATCH /delivery/availability

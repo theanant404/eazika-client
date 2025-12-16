@@ -4,6 +4,7 @@ import {
   ProductType,
   ProductDetailType,
   ProductPriceType,
+  Category,
 } from "@/types/products";
 
 export type {
@@ -12,4 +13,5 @@ export type {
   ProductType,
   ProductDetailType,
   ProductPriceType,
+  Category,
 };

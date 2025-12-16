@@ -87,9 +87,19 @@ const coustomerServices = {
     }
   },
 
+  getCategories: async (): Promise<any[]> => {
+    try {
+      const response = await axios.get("/customers/categories");
+      return response.data.data;
+    } catch (error) {
+      console.warn("Failed to fetch categories");
+      return [];
+    }
+  },
+
   cartMethods: allCartMethods,
 };
 
 export default coustomerServices;
-export const { getProducts, getProductById, getAvailableCities, cartMethods } =
+export const { getProducts, getProductById, getAvailableCities, getCategories, cartMethods } =
   coustomerServices;

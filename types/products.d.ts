@@ -93,4 +93,14 @@ export {
   CartItem,
   AddToCartPayload,
   OrderPayload,
+  Category,
 };
+
+interface Category {
+  id: number | string;
+  name: string;
+  slug: string;
+  image?: string;
+  icon?: any;
+  itemCount?: number;
+}
