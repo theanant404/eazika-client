@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ArrowLeft,
   User,
@@ -10,8 +12,6 @@ import {
   Loader2,
   Camera,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { userStore } from "@/store";
 import { userService } from "@/services/userService";
 
@@ -26,9 +26,9 @@ export default function EditProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
+    name: user?.name,
+    email: user?.email,
+    phone: user?.phone,
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -36,15 +36,17 @@ export default function EditProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-      });
-      setImagePreview(user?.image || null);
-    }
-  }, [user]);
+    (async () => {
+      if (!user) await fetchUser();
+      if (user)
+        setFormData((prev) => ({
+          ...prev,
+          name: user?.name || prev.name,
+          email: user?.email || prev.email,
+          phone: user?.phone || prev.phone,
+        }));
+    })();
+  }, [user, fetchUser]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -59,8 +61,6 @@ export default function EditProfilePage() {
       setImagePreview(objectUrl);
     }
   };
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +86,7 @@ export default function EditProfilePage() {
       }
 
       // 3. Refresh local data to ensure sync
-      await fetchUser();
+      await fetchUser("fresh");
 
       router.back();
     } catch (error) {

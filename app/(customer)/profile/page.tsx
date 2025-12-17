@@ -1,88 +1,37 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   User,
   ChevronRight,
   MapPin,
-  CreditCard,
   Package,
   Bell,
   Moon,
   Sun,
   LogOut,
   AlertTriangle,
-  FileText,
-  LifeBuoy,
   Loader2,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "next-themes";
-import Link from "next/link";
 import { userStore } from "@/store";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 
-// --- Logout Confirmation Modal ---
-const LogoutConfirmationModal = ({
-  onConfirm,
-  onCancel,
-}: {
-  onConfirm: () => void;
-  onCancel: () => void;
-}) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-black/60 z-60 flex items-center justify-center p-4 backdrop-blur-sm"
-  >
-    <motion.div
-      initial={{ scale: 0.9, y: 20 }}
-      animate={{ scale: 1, y: 0 }}
-      exit={{ scale: 0.9, y: 20 }}
-      className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-xl p-6 text-center border border-gray-100 dark:border-gray-700"
-    >
-      <div className="mx-auto h-12 w-12 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-        <AlertTriangle className="h-6 w-6 text-red-500" />
-      </div>
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-        Log Out?
-      </h2>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Are you sure you want to log out of your account?
-      </p>
-      <div className="flex gap-3 mt-6">
-        <button
-          onClick={onCancel}
-          className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={onConfirm}
-          className="flex-1 bg-red-500 text-white py-2.5 rounded-xl font-semibold hover:bg-red-600 transition-colors text-sm"
-        >
-          Log Out
-        </button>
-      </div>
-    </motion.div>
-  </motion.div>
-);
-
-// --- Main Page Component ---
+// ============================ Profile Page Component ============================ //
 export default function ProfilePage() {
   const router = useRouter();
   const { user, fetchUser, logout, isLoading } = userStore();
-  const [isClient, setIsClient] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    setIsClient(true);
-    // Ensure we have the latest user data
-    fetchUser();
-  }, []);
+    (async () => {
+      if (!user) await fetchUser();
+    })();
+  }, [fetchUser, user]);
 
   const handleLogout = async () => {
     await logout();
@@ -110,10 +59,6 @@ export default function ProfilePage() {
     hidden: { opacity: 0, x: -20 },
     visible: { opacity: 1, x: 0 },
   };
-
-  if (!isClient) {
-    return <div className="min-h-screen bg-gray-50 dark:bg-gray-900"></div>;
-  }
 
   return (
     <div className="w-full max-w-5xl mx-auto bg-gray-50 dark:bg-gray-900 min-h-screen pb-24">
@@ -158,7 +103,7 @@ export default function ProfilePage() {
             <div>
               {/* Dynamic Name */}
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {user?.name || "Guest User"}
+                {user?.name || "Loading..."}
               </h2>
               {/* Dynamic Phone (Primary) or Email */}
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -290,3 +235,50 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+// ============================= Logout Confirmation Modal ============================ //
+const LogoutConfirmationModal = ({
+  onConfirm,
+  onCancel,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black/60 z-60 flex items-center justify-center p-4 backdrop-blur-sm"
+  >
+    <motion.div
+      initial={{ scale: 0.9, y: 20 }}
+      animate={{ scale: 1, y: 0 }}
+      exit={{ scale: 0.9, y: 20 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-xl p-6 text-center border border-gray-100 dark:border-gray-700"
+    >
+      <div className="mx-auto h-12 w-12 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+        <AlertTriangle className="h-6 w-6 text-red-500" />
+      </div>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+        Log Out?
+      </h2>
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        Are you sure you want to log out of your account?
+      </p>
+      <div className="flex gap-3 mt-6">
+        <button
+          onClick={onCancel}
+          className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="flex-1 bg-red-500 text-white py-2.5 rounded-xl font-semibold hover:bg-red-600 transition-colors text-sm"
+        >
+          Log Out
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+);

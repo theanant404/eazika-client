@@ -1,48 +1,28 @@
 import axios, { isAxiosError } from "axios";
-// import { useUserStore } from "@/hooks/useUserStore";
+import { toast } from "sonner";
 
-const SERVER_URL =
-  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
-const BASE_URL = `${SERVER_URL}/api/v2`;
+const serverUrl =
+  process.env.NEXT_PUBLIC_SERVER_URL || "https://server.eazika.com";
 
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: `${serverUrl}/api/v2`,
   timeout: 15000,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
 
 async function getToken(tokenName: string): Promise<string | null> {
-  // 1. Try reading from cookieStore (Modern Browsers)
   try {
-    if (typeof cookieStore !== 'undefined') {
-        const cookie = await cookieStore.get(tokenName);
-        if (cookie?.value) return cookie.value;
+    return (
+      (await cookieStore.get(tokenName))?.value ||
+      (await localStorage.getItem(tokenName))
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error getting token:", error.message);
     }
-  } catch (e) {
-    // Ignore error, proceed to next method
+    return null;
   }
-
-  // 2. Try reading from document.cookie (Fallback)
-  try {
-      if (typeof document !== 'undefined') {
-          const match = document.cookie.match(new RegExp('(^| )' + tokenName + '=([^;]+)'));
-          if (match) return match[2];
-      }
-  } catch (e) {
-      // Ignore
-  }
-
-  // 3. Try reading from localStorage (Fallback)
-  try {
-      if (typeof localStorage !== 'undefined') {
-          return localStorage.getItem(tokenName);
-      }
-  } catch (e) {
-      // Ignore
-  }
-  
-  return null;
 }
 // --- REQUEST INTERCEPTOR ---
 axiosInstance.interceptors.request.use(
@@ -69,6 +49,7 @@ axiosInstance.interceptors.response.use(
     //     console.warn("Unauthorized! Please log in again.");
     //   }
     // }
+    toast.error(error.response?.data?.message || "An error occurred");
     return Promise.reject(error);
   }
 );

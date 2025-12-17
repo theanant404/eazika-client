@@ -11,7 +11,7 @@ const cousterRoutes = [
 ];
 const deleveryRoutes = [
   "/delivery",
-  "/delivery/register",
+  "/rider/register",
   "/delivery/track",
   "/delivery/map",
   "/delivery/profile",
@@ -50,15 +50,10 @@ export async function proxy(req: NextRequest) {
       pathname.startsWith("/delivery") &&
       userRole !== "delivery_boy"
     ) {
-      if (pathname === "/delivery/register") return NextResponse.next(); // allow delivery registration
+      if (pathname === "/rider/register") return NextResponse.next(); // allow delivery registration
       return NextResponse.redirect(
         new URL("/?msg=unauthorized_for_delivery_page", req.url)
       );
-    } else if (
-      pathname === "/delivery/register" &&
-      userRole == "delivery_boy"
-    ) {
-      return NextResponse.redirect(new URL(`/delivery`, req.url));
     }
     // } else if (cousterRoutes.includes(pathname) && userRole !== "user") {
     //   return NextResponse.redirect(new URL("/", req.url));
