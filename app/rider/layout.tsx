@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, List, User, Bike, Power } from "lucide-react";
+import { MapPin, List, User, Bike, Power, History } from "lucide-react";
 import { useDeliveryStore } from "@/hooks/useDeliveryStore";
 
 export default function DeliveryLayout({
@@ -17,6 +17,7 @@ export default function DeliveryLayout({
   const navItems = [
     { name: "Orders", href: "/rider", icon: List },
     { name: "Map", href: "/rider/map", icon: MapPin },
+    { name: "History", href: "/rider/history", icon: History },
     { name: "Profile", href: "/rider/profile", icon: User },
   ];
 

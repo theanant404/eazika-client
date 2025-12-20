@@ -209,7 +209,7 @@ export default function DeliveryProfilePage() {
 
                             {/* Stats Overview */}
                             <div className="grid grid-cols-1 gap-4">
-                                <Link href="/delivery/history" className="block">
+                                <Link href="/rider/history" className="block">
                                     <div className="bg-gray-800 p-5 rounded-2xl border border-gray-700 hover:bg-gray-700 transition-colors cursor-pointer flex items-center justify-between">
                                         <div>
                                             <h4 className="text-gray-400 text-xs font-bold uppercase">Completed Deliveries</h4>
