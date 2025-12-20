@@ -217,10 +217,12 @@ export const ShopService = {
 
   getGlobalCatalog: async (): Promise<ShopProduct[]> => {
     try {
-      const response = await axios.get("/shops/products/get-all-global-product");
+      const response = await axios.get(
+        "/shops/products/get-all-global-product"
+      );
       // Cast explicitly if needed or rely on inference
       const globalData = response.data.data as GlobalProductListType;
-      
+
       return globalData.products.map((gp) => ({
         id: Number(gp.id), // Ensure numeric ID
         name: gp.name,
@@ -231,14 +233,15 @@ export const ShopService = {
         isGlobal: true,
         category: gp.category,
         price: gp.pricing?.[0]?.price || 0,
-        prices: gp.pricing?.map((p, index) => ({
-          id: index + 1,
-          price: p.price,
-          discount: p.discount || 0,
-          weight: p.weight,
-          unit: p.unit,
-          currency: p.currency || "INR",
-        })) || [],
+        prices:
+          gp.pricing?.map((p, index) => ({
+            id: index + 1,
+            price: p.price,
+            discount: p.discount || 0,
+            weight: p.weight,
+            unit: p.unit,
+            currency: p.currency || "INR",
+          })) || [],
         rating: gp.rating || 0,
       }));
     } catch (error) {
@@ -297,21 +300,11 @@ export const ShopService = {
 
   // --- ORDER MANAGEMENT ---
   getShopOrders: async (
-    pageOrStatus?: number | string,
+    pageOrStatus: number | string = 1,
     limit: number | string = 10
   ) => {
-    let page = 1;
-    // Check if pageOrStatus is a number or numeric string (pagination)
-    if (
-      typeof pageOrStatus === "number" ||
-      (typeof pageOrStatus === "string" && !isNaN(Number(pageOrStatus)))
-    ) {
-      page = Number(pageOrStatus);
-    }
-    // If it's a non-numeric string, it's treated as status (ignored by backend currently but allows the call)
-
     const response = await axios.get(
-      `/shops/orders/get-current-orders?page=${page}&limit=${limit}`
+      `/shops/orders/get-current-orders?page=${pageOrStatus}&limit=${limit}`
     );
     return response.data.data;
   },
@@ -322,52 +315,52 @@ export const ShopService = {
   },
 
   updateOrderStatus: async (
-    id: OrderDetail["id"],
+    orderId: OrderDetail["id"],
     status: OrderDetail["status"],
-    rider: number | string | null = null
+    riderId: number | string | null = null
   ) => {
-    // If rider is provided, use assign-order
-    if (rider) {
-      const response = await axiosInstance.post(`/shops/assign-order`, {
-        orderId: id,
-        deliveryBoyId: rider,
-      });
-      return response.data.data;
-    }
-
-    const response = await axios.patch(`/shops/update-order-status`, {
-      orderId: id,
+    const response = await axios.put(`/shops/orders/order/status/${orderId}`, {
       status,
+      riderId,
     });
     return response.data.data;
   },
 
   // --- RIDER MANAGEMENT ---
-  // --- RIDER MANAGEMENT ---
-  getShopRiders: async (status: 'all' | 'pending' | 'verified' = 'all') => {
-    const response = await axiosInstance.get<any>("/shops/get-riders", { params: { status } });
+  getShopRiders: async (status: "all" | "pending" | "verified" = "all") => {
+    const response = await axiosInstance.get<any>("/shops/get-riders", {
+      params: { status },
+    });
     return response.data.data.map((r: any) => ({
-        id: r.id,
-        name: r.user.name || "Unknown",
-        phone: r.user.phone,
-        status: !r.isVerified ? 'pending' : (r.isAvailable ? 'available' : 'offline'),
-        activeOrders: 0,
-        totalDeliveries: 0,
-        rating: 4.5,
-        image: r.user.image,
-        isVerified: r.isVerified
+      id: r.id,
+      name: r.user.name || "Unknown",
+      phone: r.user.phone,
+      status: !r.isVerified
+        ? "pending"
+        : r.isAvailable
+        ? "available"
+        : "offline",
+      activeOrders: 0,
+      totalDeliveries: 0,
+      rating: 4.5,
+      image: r.user.image,
+      isVerified: r.isVerified,
     }));
   },
 
   approveRider: async (riderId: number) => {
-      const response = await axiosInstance.patch("/shops/approve-rider", { riderId });
-      return response.data.data;
+    const response = await axiosInstance.patch("/shops/approve-rider", {
+      riderId,
+    });
+    return response.data.data;
   },
 
   rejectRider: async (riderId: number) => {
-      // Axios delete with body requires 'data' property in config
-      const response = await axiosInstance.delete("/shops/reject-rider", { data: { riderId } });
-      return response.data.data;
+    // Axios delete with body requires 'data' property in config
+    const response = await axiosInstance.delete("/shops/reject-rider", {
+      data: { riderId },
+    });
+    return response.data.data;
   },
 
   searchUserByPhone: async (phone: string) => {
