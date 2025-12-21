@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { userService as UserService } from "@/services/userService";
 import { Address, NewAddressPayload as AddressPayload } from "@/types/user";
 import { userStore } from "@/store";
+import toast, { Toaster } from "react-hot-toast";
 
 // --- Confirmation Modal ---
 const DeleteConfirmationModal = ({
@@ -330,23 +331,28 @@ export default function AddressesPage() {
     try {
       if (editingAddress) {
         // Update existing
-        // const updated = await UserService.updateAddress(
-        //   editingAddress.id,
-        //   data
-        // );
-        // setAddresses((prev) =>
-        //   prev.map((a) => (a.id === updated.id ? updated : a))
-        // );
+        toast.loading("Updating address...", { id: "address-action" });
+        const updated = await UserService.updateAddress(
+          editingAddress.id as number,
+          { ...data, id: editingAddress.id }
+        );
+        setAddresses((prev) =>
+          prev.map((a) => (a.id === updated.id ? updated : a))
+        );
+        toast.success("Address updated!", { id: "address-action" });
       } else {
         // Add new
+        toast.loading("Adding address...", { id: "address-action" });
         const added = await UserService.addAddress(data);
         setAddresses((prev) => [...prev, added]);
+        toast.success("Address added!", { id: "address-action" });
       }
       // Return to list view
       setViewState("list");
       setEditingAddress(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save address", error);
+      toast.error(error.message || "Failed to save address", { id: "address-action" });
     } finally {
       setIsActionLoading(false);
     }
@@ -356,11 +362,14 @@ export default function AddressesPage() {
     if (!deletingAddress) return;
     setIsActionLoading(true);
     try {
-      // await UserService.deleteAddress(deletingAddress.id);
-      // setAddresses((prev) => prev.filter((a) => a.id !== deletingAddress.id));
+      toast.loading("Deleting address...", { id: "address-action" });
+      await UserService.deleteAddress(deletingAddress.id as number);
+      setAddresses((prev) => prev.filter((a) => a.id !== deletingAddress.id));
       setDeletingAddress(null);
-    } catch (error) {
+      toast.success("Address deleted!", { id: "address-action" });
+    } catch (error: any) {
       console.error("Failed to delete address", error);
+      toast.error(error.message || "Failed to delete address", { id: "address-action" });
     } finally {
       setIsActionLoading(false);
     }
@@ -386,6 +395,7 @@ export default function AddressesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
+      <Toaster position="bottom-center" />
       {/* Header - Cleaned up: removed solid backgrounds for a cleaner look */}
       <header className="sticky top-0 z-10 px-4 py-4 flex items-center gap-3 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-md">
         <button

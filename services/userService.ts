@@ -68,12 +68,28 @@ export const userService = {
   },
 
   uploadImage: async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await axios.post<{ url: string }>("/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    // Generate unique filename
+    const fileName = `profile-${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+    const contentType = file.type || 'image/jpeg';
+
+    // 1. Get Signed URL from backend
+    const { data } = await axios.post<{ signedUrl: string; publicUrl: string }>('/uploads/avatar', {
+      fileName,
+      contentType
     });
-    return response.data.url;
+
+    // 2. Direct Upload to GCS (bypass axios interceptors)
+    const uploadResponse = await fetch(data.signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: file
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+    }
+
+    return data.publicUrl;
   },
 
   updateProfilePicture: async (imageUrl: string) => {
@@ -87,19 +103,21 @@ export const userService = {
 
   addAddress: async (data: NewAddressPayload): Promise<Address> => {
     const response = await axios.post("/users/user/add-new-address", data);
-    return response.data;
+    return response.data.data?.address || response.data.data;
   },
 
   getAddresses: async (): Promise<Address[]> => {
     const response = await axios.get("/users/user/addresses");
-    return response.data;
+    const addresses = response.data.data || response.data || [];
+    return Array.isArray(addresses) ? addresses : [];
   },
+
   updateAddress: async (addressId: number, data: Address) => {
     const response = await axios.patch(
       `/users/user/update-address/${addressId}`,
       data
     );
-    return response.data;
+    return response.data.data?.address || response.data.data;
   },
 
   deleteAddress: async (addressId: number) => {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { userStore } from "@/store";
 import { userService } from "@/services/userService";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -69,17 +70,16 @@ export default function EditProfilePage() {
     try {
       // 1. Handle Image Upload if a new file was selected
       if (imageFile) {
-        // Upload image to server
+        toast.loading("Uploading image...", { id: "profile-update" });
         const imageUrl = await userService.uploadImage(imageFile);
-
-        // Call API to update the image URL
         await userService.updateProfilePicture(imageUrl);
       }
 
       // 2. Update Text Profile Data
       if (user) {
+        toast.loading("Saving profile...", { id: "profile-update" });
         await updateUser({
-          ...user, // Keep existing fields
+          ...user,
           name: formData.name || "",
           email: formData.email || undefined,
         });
@@ -87,10 +87,11 @@ export default function EditProfilePage() {
 
       // 3. Refresh local data to ensure sync
       await fetchUser("fresh");
-
-      router.back();
-    } catch (error) {
-      console.error("Failed to update profile", error);
+      
+      toast.success("Profile updated successfully!", { id: "profile-update" });
+      setTimeout(() => router.back(), 500);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile", { id: "profile-update" });
     } finally {
       setIsUploading(false);
     }
@@ -100,6 +101,7 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+      <Toaster position="bottom-center" />
       <div className="max-w-xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">

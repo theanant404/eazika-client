@@ -208,17 +208,14 @@ export default function DeliveryProfilePage() {
                             </div>
 
                             {/* Stats Overview */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gray-800 p-4 rounded-2xl border border-gray-700 text-center">
-                                    <h4 className="text-gray-400 text-xs font-bold uppercase">Total Earnings</h4>
-                                    <p className="text-2xl font-bold text-white mt-1">{profile.totalEarnings ? `₹${profile.totalEarnings.toLocaleString()}` : '₹0'}</p>
-                                </div>
-                                <Link href="/delivery/history" className="block">
-                                    <div className="bg-gray-800 p-4 rounded-2xl border border-gray-700 text-center hover:bg-gray-700 transition-colors cursor-pointer">
-                                        <h4 className="text-gray-400 text-xs font-bold uppercase flex items-center justify-center gap-1">
-                                            Completed <ArrowRight size={12} />
-                                        </h4>
-                                        <p className="text-2xl font-bold text-white mt-1">{history.length}</p>
+                            <div className="grid grid-cols-1 gap-4">
+                                <Link href="/rider/history" className="block">
+                                    <div className="bg-gray-800 p-5 rounded-2xl border border-gray-700 hover:bg-gray-700 transition-colors cursor-pointer flex items-center justify-between">
+                                        <div>
+                                            <h4 className="text-gray-400 text-xs font-bold uppercase">Completed Deliveries</h4>
+                                            <p className="text-3xl font-bold text-white mt-1">{history.length}</p>
+                                        </div>
+                                        <ArrowRight size={24} className="text-gray-500" />
                                     </div>
                                 </Link>
                             </div>

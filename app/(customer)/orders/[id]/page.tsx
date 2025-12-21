@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   CheckCircle,
@@ -19,7 +19,7 @@ import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import { CartService, Order, TrackingDetails } from "@/services/cartService";
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from "@react-google-maps/api";
 
 // Helper to get Status Icon & Color based on API status
 const getStatusInfo = (status: string) => {
@@ -82,10 +82,13 @@ export default function OrderDetailsPage() {
   const [trackingData, setTrackingData] = useState<TrackingDetails | null>(
     null
   );
+  // State for route polyline
+  const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
+    libraries: ["places"],
   });
 
   useEffect(() => {
@@ -119,12 +122,41 @@ export default function OrderDetailsPage() {
         } catch (e) {
           console.error("Tracking Error:", e);
         }
-      };
+      }
       fetchLocation();
       interval = setInterval(fetchLocation, 10000); // Poll every 10s
     }
     return () => clearInterval(interval);
   }, [order?.status, order?.id]);
+
+  // Calculate route from rider to delivery address
+  const calculateRoute = useCallback(async () => {
+    if (!isLoaded || !window.google) return;
+    if (!trackingData?.deliveryBoy?.currentLat || !trackingData?.deliveryBoy?.currentLng) return;
+    if (!order?.address) return;
+
+    const destinationAddress = `${order.address.line1}, ${order.address.city}, ${order.address.state} ${order.address.pinCode}`;
+    const directionsService = new window.google.maps.DirectionsService();
+
+    try {
+      const results = await directionsService.route({
+        origin: {
+          lat: trackingData.deliveryBoy.currentLat,
+          lng: trackingData.deliveryBoy.currentLng,
+        },
+        destination: destinationAddress,
+        travelMode: google.maps.TravelMode.DRIVING,
+      });
+      setDirectionsResponse(results);
+    } catch (error) {
+      // Route calculation failed, map will still show rider location
+    }
+  }, [isLoaded, trackingData, order?.address]);
+
+  // Recalculate route when tracking data updates
+  useEffect(() => {
+    calculateRoute();
+  }, [calculateRoute]);
 
   const handleCopyOrderId = () => {
     if (!order) return;
@@ -242,7 +274,7 @@ export default function OrderDetailsPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-gray-100 dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden h-64 relative z-0"
+              className="bg-gray-100 dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden h-72 relative z-0"
             >
               <GoogleMap
                 mapContainerStyle={{ width: "100%", height: "100%" }}
@@ -250,9 +282,16 @@ export default function OrderDetailsPage() {
                   lat: trackingData.deliveryBoy.currentLat,
                   lng: trackingData.deliveryBoy.currentLng,
                 }}
-                zoom={15}
-                options={{ disableDefaultUI: true }}
+                zoom={14}
+                options={{ 
+                  disableDefaultUI: true,
+                  styles: [
+                    { featureType: "poi", stylers: [{ visibility: "off" }] },
+                    { featureType: "transit", stylers: [{ visibility: "off" }] },
+                  ]
+                }}
               >
+                {/* Rider Marker */}
                 <Marker
                   position={{
                     lat: trackingData.deliveryBoy.currentLat,
@@ -260,10 +299,28 @@ export default function OrderDetailsPage() {
                   }}
                   icon={{
                     url: "https://cdn-icons-png.flaticon.com/512/3755/3755376.png",
-                    scaledSize: new window.google.maps.Size(40, 40),
+                    scaledSize: new window.google.maps.Size(45, 45),
+                    anchor: new window.google.maps.Point(22, 22),
                   }}
                 />
+                
+                {/* Route Polyline */}
+                {directionsResponse && (
+                  <DirectionsRenderer
+                    options={{
+                      directions: directionsResponse,
+                      suppressMarkers: true, // We use custom markers
+                      polylineOptions: {
+                        strokeColor: "#22c55e", // Green-500
+                        strokeWeight: 5,
+                        strokeOpacity: 0.8,
+                      },
+                    }}
+                  />
+                )}
               </GoogleMap>
+              
+              {/* Live Tracker Badge */}
               <div className="absolute top-3 left-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-bold shadow-md text-gray-800 dark:text-white flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -271,6 +328,27 @@ export default function OrderDetailsPage() {
                 </span>
                 Live Tracker
               </div>
+              
+              {/* ETA Badge */}
+              {directionsResponse?.routes[0]?.legs[0] && (
+                <div className="absolute bottom-3 left-3 right-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur px-4 py-2.5 rounded-xl shadow-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-5 h-5 text-green-500" />
+                    <div>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Estimated Arrival</p>
+                      <p className="text-sm font-bold text-gray-800 dark:text-white">
+                        {directionsResponse.routes[0].legs[0].duration?.text}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Distance</p>
+                    <p className="text-sm font-bold text-gray-800 dark:text-white">
+                      {directionsResponse.routes[0].legs[0].distance?.text}
+                    </p>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 

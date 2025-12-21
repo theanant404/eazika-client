@@ -46,9 +46,20 @@ export const useDeliveryStore = create<DeliveryState>((set, get) => ({
   fetchHistory: async () => {
     set({ isLoading: true });
     try {
+        // Fetch delivered orders
         const data = await DeliveryService.getAssignedOrders('delivered');
-        const completed = data.filter(o => o.status === 'delivered' || o.status === 'cancelled');
-        set({ history: completed });
+        
+        // Also fetch cancelled orders
+        let cancelledData: DeliveryOrder[] = [];
+        try {
+            cancelledData = await DeliveryService.getAssignedOrders('cancelled');
+        } catch (e) {
+            // Ignore if cancelled fetch fails
+        }
+        
+        // Combine both statuses
+        const allCompleted = [...data, ...cancelledData];
+        set({ history: allCompleted });
     } catch (error) {
         console.error("Failed to fetch history", error);
     } finally {
