@@ -95,7 +95,10 @@ export default function CategoriesPage() {
           animate="visible"
         >
           {filteredCategories.map((category) => {
-            const Icon = typeof category.icon === "function" ? category.icon : undefined;
+            const IconComponent =
+              typeof category.icon === "function"
+                ? (category.icon as React.ElementType)
+                : null;
 
             return (
               <Link href={`/categories/${category.slug}`} key={category.id}>
@@ -113,8 +116,10 @@ export default function CategoriesPage() {
                         fill
                         className="rounded-full object-cover"
                       />
-                    ) : Icon ? (
-                      <Icon className="text-gray-600 dark:text-gray-300 group-hover:text-yellow-600 dark:group-hover:text-yellow-500 transition-colors"
+                    ) : IconComponent ? (
+                      <IconComponent
+                        size={24}
+                        className="text-gray-600 dark:text-gray-300 group-hover:text-yellow-600 dark:group-hover:text-yellow-500 transition-colors"
                       />
                     ) : (
                       <LayoutGrid className="text-gray-400" size={24} />
