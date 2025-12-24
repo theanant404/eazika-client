@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { shopStore } from "@/store";
 import { ProductForm } from "@/components/shop/ProductForm";
-import { shopService } from "@/services/shopService";
+import { shopService, type UpdateProductPayload } from "@/services/shopService";
 import { toast } from "sonner";
 import type { NewProductFormData, ProductPriceType } from "@/types/shop";
 
@@ -55,6 +55,7 @@ export default function ProductsPage() {
   >(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editablePricing, setEditablePricing] = useState<Record<number, ProductPriceType[]>>({});
+  const [originalPricing, setOriginalPricing] = useState<Record<number, ProductPriceType[]>>({});
   const [dirtyProductIds, setDirtyProductIds] = useState<Set<number>>(new Set());
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
@@ -96,13 +97,16 @@ export default function ProductsPage() {
   // initialize editable pricing when products change
   useEffect(() => {
     const map: Record<number, ProductPriceType[]> = {};
+    const originals: Record<number, ProductPriceType[]> = {};
     products.products.forEach((p) => {
       const pricing = normalizePricing(p);
       if (p.id !== undefined && p.id !== null) {
         map[Number(p.id)] = pricing;
+        originals[Number(p.id)] = pricing;
       }
     });
     setEditablePricing(map);
+    setOriginalPricing(originals);
     // reset dirty flags when list refreshes
     setDirtyProductIds(new Set());
     setUnsavedChanges(false);
@@ -199,12 +203,47 @@ export default function ProductsPage() {
 
   const savePricing = async (productId: number) => {
     const pricing = editablePricing[productId];
+    const original = originalPricing[productId] ?? [];
     if (!pricing) return;
-    try {
-      await shopService.updateProductDetails(productId, {
-        prices: pricing,
-        stock: pricing[0]?.stock ?? 0,
+
+    const isSameRow = (a: ProductPriceType, b: ProductPriceType) =>
+      a.price === b.price &&
+      (a.discount ?? 0) === (b.discount ?? 0) &&
+      a.weight === b.weight &&
+      a.unit === b.unit &&
+      a.stock === b.stock;
+
+    const findOriginalFor = (row: ProductPriceType, index: number) => {
+      if (row.id !== undefined) {
+        return original.find((o) => o.id === row.id) ?? original[index];
+      }
+      return original[index];
+    };
+
+    const changedPrices = pricing.filter((row, index) => {
+      const base = findOriginalFor(row, index);
+      if (!base) return true;
+      return !isSameRow(row, base);
+    });
+
+    const stockChanged = pricing[0]?.stock !== original[0]?.stock;
+
+    if (changedPrices.length === 0 && !stockChanged) {
+      setDirtyProductIds((prev) => {
+        const next = new Set(prev);
+        next.delete(productId);
+        setUnsavedChanges(next.size > 0);
+        return next;
       });
+      return;
+    }
+
+    try {
+      const payload: Partial<UpdateProductPayload> = {};
+      if (changedPrices.length > 0) payload.prices = changedPrices;
+      if (stockChanged) payload.stock = pricing[0]?.stock ?? 0;
+
+      await shopService.updateProductDetails(productId, payload);
       await fetchProducts();
       setDirtyProductIds((prev) => {
         const next = new Set(prev);
