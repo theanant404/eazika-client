@@ -243,7 +243,7 @@ export default function ProductsPage() {
       if (changedPrices.length > 0) payload.prices = changedPrices;
       if (stockChanged) payload.stock = pricing[0]?.stock ?? 0;
 
-      await shopService.updateProductDetails(productId, payload);
+      await shopService.updateStock(payload);
       await fetchProducts();
       setDirtyProductIds((prev) => {
         const next = new Set(prev);

@@ -271,9 +271,10 @@ export const ShopService = {
     return response.data.data;
   },
 
-  updateStock: async (productId: number, data: ProductPriceType) => {
+  updateStock: async (data: UpdateProductPayload) => {
+    // console.log("Updating stock with data:", data);
     const response = await axiosInstance.put(
-      `/shops/products/update-shop-product-stock-and-price/${productId}`,
+      `/shops/products/update-shop-product-stock-and-price`,
       data
     );
     return response.data.data;
