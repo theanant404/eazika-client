@@ -255,6 +255,10 @@ export const ShopService = {
     const response = await axios.get("/shops/products/get-all-categories");
     return response.data.data;
   },
+  getCategoriesForPbulic: async () => {
+    const response = await axios.get("/shops/get-all-categories");
+    return response.data.data;
+  },
 
   getShopProducts: async (): Promise<ShopProductListType> => {
     const response = await axios.get("/shops/products/get-all-product");

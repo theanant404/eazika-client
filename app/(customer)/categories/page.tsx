@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ArrowLeft, Loader2, LayoutGrid } from "lucide-react";
 import { ShopService, Category } from "@/services/shopService";
+import { categories as mockCategories } from "@/app/data/mockData";
 import Image from "next/image";
 
 const containerVariants: Variants = {
@@ -36,8 +37,14 @@ export default function CategoriesPage() {
     const fetchCategories = async () => {
       setIsLoading(true);
       try {
-        const data = await ShopService.getCategories();
-        setCategories(data);
+        const data = await ShopService.getCategoriesForPbulic();
+        const list = Array.isArray(data) && data.length > 0 ? data : mockCategories;
+        // map icons only when they are function components
+        const mapped = list.map((cat: any) => {
+          const icon = typeof cat.icon === "function" ? cat.icon : undefined;
+          return { ...cat, icon };
+        });
+        setCategories(mapped as Category[]);
       } catch (error) {
         console.error("Failed to load categories", error);
       } finally {
