@@ -12,6 +12,7 @@ import { useLocationStore } from "@/store/locationStore"; // IMPORT STORE
 import coustomerService from "@/services/customerService";
 import type { ProductType, Category } from "@/types";
 import { categories as mockCategories } from "@/app/data/mockData";
+import ShopService from "@/services/shopService";
 
 // Animation Variants
 const containerVariants: Variants = {
@@ -74,7 +75,7 @@ export default function HomePage() {
       setIsLoading(true);
       try {
         const [catsData, prodsData] = await Promise.all([
-          coustomerService.getCategories(),
+          ShopService.getCategoriesForPbulic(),
           // PASS CITY TO API
           coustomerService.getProducts(1, 20, currentCity),
         ]);
