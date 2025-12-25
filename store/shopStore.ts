@@ -14,8 +14,16 @@ interface ShopState {
   isLoading: boolean;
 
   // Actions
-  fetchProducts: () => Promise<void>;
-  featchGlobalProducts: () => Promise<void>;
+  fetchProducts: (
+    page?: number | string,
+    limit?: number | string,
+    append?: boolean
+  ) => Promise<void>;
+  featchGlobalProducts: (
+    page?: number | string,
+    limit?: number | string,
+    append?: boolean
+  ) => Promise<void>;
   feathCurrentOrders: (
     page?: number | string,
     limit?: number | string
@@ -48,8 +56,10 @@ export const shopStore = create<ShopState>((set, get) => ({
 
   isLoading: false,
 
-  fetchProducts: async () => fetchProductsData(set),
-  featchGlobalProducts: async () => fetchGlobalProductsData(set),
+  fetchProducts: async (page = 1, limit = 10, append = false) =>
+    fetchProductsData(page, limit, append, set),
+  featchGlobalProducts: async (page = 1, limit = 10, append = false) =>
+    fetchGlobalProductsData(page, limit, append, set),
   feathCurrentOrders: async (page = 1, limit = 10) =>
     fetchCurrentOrdersData(page, limit, set, get),
 
@@ -63,23 +73,66 @@ type Set = (
   state: Partial<ShopState> | ((state: ShopState) => Partial<ShopState>)
 ) => void;
 
+const dedupeById = <T extends { id?: number | string }>(items: T[]): T[] => {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const item of items) {
+    const key = String(item.id ?? "");
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      result.push(item);
+    }
+  }
+  return result;
+};
+
 // ============================ Actions ============================ //
-const fetchProductsData = async (set: Set) => {
+const fetchProductsData = async (
+  page: number | string,
+  limit: number | string,
+  append: boolean,
+  set: Set
+) => {
   set({ isLoading: true });
   try {
-    const data = await shopService.getShopProducts();
-    set({ products: data });
+    const data = await shopService.getShopProducts(page, limit);
+    const normalized: ShopProductListType = {
+      products: data.products || [],
+      pagination:
+        data.pagination || {
+          currentPage: 1,
+          itemsPerPage: 10,
+          totalItems: 0,
+          totalPages: 0,
+        },
+    };
+
+    if (append && Number(page) > 1) {
+      set((state) => ({
+        products: {
+          products: dedupeById([...(state.products?.products ?? []), ...normalized.products]),
+          pagination: normalized.pagination,
+        },
+      }));
+    } else {
+      set({ products: normalized });
+    }
   } finally {
     set({ isLoading: false });
   }
 };
 
-const fetchGlobalProductsData = async (set: Set) => {
+const fetchGlobalProductsData = async (
+  page: number | string,
+  limit: number | string,
+  append: boolean,
+  set: Set
+) => {
   set({ isLoading: true });
   try {
-    const raw = await shopService.getGlobalProducts();
+    const raw = await shopService.getGlobalProducts(page, limit);
     // API sometimes returns { globalProducts: [...] } instead of { products: [...] }
-    const normalized = {
+    const normalized: GlobalProductListType = {
       products: (raw as any)?.products ?? (raw as any)?.globalProducts ?? [],
       pagination: (raw as any)?.pagination ?? {
         currentPage: 1,
@@ -87,8 +140,18 @@ const fetchGlobalProductsData = async (set: Set) => {
         totalItems: 0,
         totalPages: 0,
       },
-    } as GlobalProductListType;
-    set({ globalProducts: normalized });
+    };
+
+    if (append && Number(page) > 1) {
+      set((state) => ({
+        globalProducts: {
+          products: dedupeById([...(state.globalProducts?.products ?? []), ...normalized.products]),
+          pagination: normalized.pagination,
+        },
+      }));
+    } else {
+      set({ globalProducts: normalized });
+    }
   } finally {
     set({ isLoading: false });
   }

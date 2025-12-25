@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Plus, Package, Globe, Box, Check, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -63,6 +63,10 @@ export default function ProductsPage() {
   const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedGlobalProduct, setSelectedGlobalProduct] = useState<null | (typeof globalProductList)[number]>(null);
+  const [inventoryLoadingMore, setInventoryLoadingMore] = useState(false);
+  const [globalLoadingMore, setGlobalLoadingMore] = useState(false);
+  const inventorySentinelRef = useRef<HTMLDivElement | null>(null);
+  const globalSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const FALLBACK_PRICE: ProductPriceType = {
     price: 0,
@@ -74,6 +78,20 @@ export default function ProductsPage() {
 
   const productList = products?.products ?? [];
   const globalProductList = globalProducts?.products ?? [];
+  const inventoryPagination = products?.pagination ?? {
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  };
+  const globalPagination = globalProducts?.pagination ?? {
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0,
+  };
+  const inventoryHasMore = inventoryPagination.currentPage < inventoryPagination.totalPages;
+  const globalHasMore = globalPagination.currentPage < globalPagination.totalPages;
   // console.log("Global Products in component:", globalProducts);
 
   const normalizePricing = (value: unknown): ProductPriceType[] => {
@@ -134,10 +152,75 @@ export default function ProductsPage() {
 
   useEffect(() => {
     (async () => {
-      if (productList.length === 0) await fetchProducts();
-      if (globalProductList.length === 0) await featchGlobalProducts();
+      if (productList.length === 0)
+        await fetchProducts(1, inventoryPagination.itemsPerPage || 10, false);
+      if (globalProductList.length === 0)
+        await featchGlobalProducts(1, globalPagination.itemsPerPage || 10, false);
     })();
-  }, [fetchProducts, featchGlobalProducts, productList.length, globalProductList.length]);
+  }, [
+    fetchProducts,
+    featchGlobalProducts,
+    productList.length,
+    globalProductList.length,
+    inventoryPagination.itemsPerPage,
+    globalPagination.itemsPerPage,
+  ]);
+
+  const loadMoreInventory = useCallback(async () => {
+    if (inventoryLoadingMore || !inventoryHasMore) return;
+    setInventoryLoadingMore(true);
+    const nextPage = (inventoryPagination.currentPage || 1) + 1;
+    await fetchProducts(nextPage, inventoryPagination.itemsPerPage || 10, true);
+    setInventoryLoadingMore(false);
+  }, [
+    fetchProducts,
+    inventoryHasMore,
+    inventoryLoadingMore,
+    inventoryPagination.currentPage,
+    inventoryPagination.itemsPerPage,
+  ]);
+
+  const loadMoreGlobal = useCallback(async () => {
+    if (globalLoadingMore || !globalHasMore) return;
+    setGlobalLoadingMore(true);
+    const nextPage = (globalPagination.currentPage || 1) + 1;
+    await featchGlobalProducts(nextPage, globalPagination.itemsPerPage || 10, true);
+    setGlobalLoadingMore(false);
+  }, [
+    featchGlobalProducts,
+    globalHasMore,
+    globalLoadingMore,
+    globalPagination.currentPage,
+    globalPagination.itemsPerPage,
+  ]);
+
+  useEffect(() => {
+    if (activeTab !== "inventory" && activeTab !== "my_products") return;
+    const sentinel = inventorySentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreInventory();
+      },
+      { root: null, rootMargin: "200px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [activeTab, loadMoreInventory]);
+
+  useEffect(() => {
+    if (activeTab !== "global") return;
+    const sentinel = globalSentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreGlobal();
+      },
+      { root: null, rootMargin: "200px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [activeTab, loadMoreGlobal]);
 
   const openEditModal = async (id: number | string) => {
     const numericId = Number(id);
@@ -303,9 +386,10 @@ export default function ProductsPage() {
     setExitPromptOpen(true);
   };
 
-  const filteredProducts = productList.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = productList.filter((p) => {
+    const name = (p as { name?: string })?.name || "";
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const handleAddProductFromGlobalProducts = (product: (typeof globalProductList)[number]) => {
     setSelectedGlobalProduct(product);
@@ -547,6 +631,15 @@ export default function ProductsPage() {
           </tbody>
         </table>
       )}
+      {(activeTab === "inventory" || activeTab === "my_products") && (
+        <div className="flex items-center justify-center py-4">
+          {inventoryLoadingMore && <span className="text-sm text-gray-500">Loading more products...</span>}
+          {!inventoryHasMore && productList.length > 0 && (
+            <span className="text-sm text-gray-500">No more products</span>
+          )}
+        </div>
+      )}
+      <div ref={inventorySentinelRef} className="h-2" />
       {activeTab === "global" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
@@ -624,6 +717,15 @@ export default function ProductsPage() {
           )}
         </div>
       )}
+      {activeTab === "global" && (
+        <div className="flex items-center justify-center py-4">
+          {globalLoadingMore && <span className="text-sm text-gray-500">Loading more products...</span>}
+          {!globalHasMore && globalProductList.length > 0 && (
+            <span className="text-sm text-gray-500">No more products</span>
+          )}
+        </div>
+      )}
+      <div ref={globalSentinelRef} className="h-2" />
       {activeTab === "my_products" &&
         productList.filter((p) => p.isGlobalProduct != true).length >
         0 && (

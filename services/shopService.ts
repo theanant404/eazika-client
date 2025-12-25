@@ -270,16 +270,37 @@ export const ShopService = {
     return response.data.data;
   },
 
-  getShopProducts: async (): Promise<ShopProductListType> => {
-    // console.log("Fetching shop products...");
-    const response = await axios.get("/shops/products/get-all-product");
+  getShopProducts: async (
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<ShopProductListType> => {
+    const params = new URLSearchParams();
+    params.append("pagination[currentPage]", String(page));
+    params.append("pagination[itemsPerPage]", String(limit));
+    params.append("currentPage", String(page));
+    params.append("itemsPerPage", String(limit));
+    params.append("page", String(page));
+    params.append("limit", String(limit));
+    const response = await axios.get(
+      `/shops/products/get-all-product?${params.toString()}`
+    );
     return response.data.data;
   },
 
-  getGlobalProducts: async (): Promise<GlobalProductListType> => {
-    console.log("Fetching global products...");
-    const response = await axios.get("/shops/products/get-all-global-product");
-    // console.log("getGlobalProducts response:", response);
+  getGlobalProducts: async (
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<GlobalProductListType> => {
+    const params = new URLSearchParams();
+    params.append("pagination[currentPage]", String(page));
+    params.append("pagination[itemsPerPage]", String(limit));
+    params.append("currentPage", String(page));
+    params.append("itemsPerPage", String(limit));
+    params.append("page", String(page));
+    params.append("limit", String(limit));
+    const response = await axios.get(
+      `/shops/products/get-all-global-product?${params.toString()}`
+    );
     return response.data.data;
   },
 
