@@ -310,7 +310,7 @@ export const ShopService = {
   ) => {
     console.log("Updating product:", productId, data);
     const response = await axiosInstance.put(
-      `/shops/update-shop-product/${productId}`,
+      `/shops/products/update-shop-product/${productId}`,
       data
     );
     return response.data;
