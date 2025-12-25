@@ -821,8 +821,15 @@ export default function ProductsPage() {
                       stock: data.pricing?.[0]?.stock ?? 0,
                     };
 
-                    await shopService.updateProductDetails(editingId, payload);
-                    await fetchProducts();
+                    try {
+                      await shopService.updateProductDetails(editingId, payload);
+                      await fetchProducts();
+                      toast.success("Product updated");
+                      closeEditModal();
+                    } catch (error) {
+                      console.error("Failed to update product", error);
+                      toast.error("Failed to update product");
+                    }
                   }}
                   onSuccess={closeEditModal}
                   successMessage="Product updated successfully!"
