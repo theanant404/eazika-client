@@ -37,6 +37,16 @@ export interface AddProductPayload {
   stock: number;
   prices: ProductPrice[];
 }
+export interface AddProductFromGlobalProduct {
+  // productCategoryId: number;
+  globalProductId: number;
+  pricing: Array<
+    ProductPriceType & {
+      globalProductId?: number;
+      shopProductId?: number;
+    }
+  >;
+}
 
 export interface UpdateProductPayload extends Partial<NewProductFormData> {
   isActive?: boolean;
@@ -277,7 +287,14 @@ export const ShopService = {
     const response = await axios.post("/shops/products/add-shop-product", data);
     return response.data.data;
   },
-
+  addProductFromGlobalCatalog: async (data: AddProductFromGlobalProduct) => {
+    console.log("selected data for add product from globel", data)
+    const response = await axios.post(
+      "/shops/products/add-shop-product-from-global-catalog",
+      data
+    );
+    return response.data.data;
+  },
   updateStock: async (data: UpdateProductPayload) => {
     // console.log("Updating stock with data:", data);
     const response = await axiosInstance.put(

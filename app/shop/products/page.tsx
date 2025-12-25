@@ -771,8 +771,16 @@ export default function ProductsPage() {
               initialPricing={normalizePricing(selectedGlobalProduct)}
               submitLabel="Add Product"
               onCancel={() => setAddModalOpen(false)}
-              onSubmit={(pricing) => {
-                console.log({ product: selectedGlobalProduct, pricing });
+              onSubmit={async (pricing) => {
+                const data = {
+                  // productCategoryId: Number(selectedGlobalProduct.id || selectedGlobalProduct.categoryId || selectedGlobalProduct.category?.id || 0),
+                  globalProductId: Number(selectedGlobalProduct.id),
+                  pricing: pricing.map((p) => ({
+                    ...p,
+                    globalProductId: Number(selectedGlobalProduct.id),
+                  })),
+                };
+                await shopService.addProductFromGlobalCatalog(data);
                 setAddModalOpen(false);
               }}
             />
