@@ -59,6 +59,7 @@ interface Pagination {
 type ShopProduct =
   | {
     isGlobalProduct: false;
+    globalProductId?: never;
     id: number | string;
     category: string;
     name: string;

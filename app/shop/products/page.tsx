@@ -545,7 +545,8 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
             {globalProductList.map((product) => {
-              const alreadyAdded = productList.some((p) => p.id === product.id);
+              const alreadyAdded = productList.some((p) => p.globalProductId === product.id);
+              // console.log(productList)
               const firstImage = product.images?.[0] || "/placeholder.png";
               const primaryPrice = product.pricing?.[0]?.price ?? 0;
 
@@ -601,7 +602,7 @@ export default function ProductsPage() {
                         <Check size={14} /> Added
                       </button>
                     ) : (
-                      <button className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 active:scale-95">
+                      <button onClick={() => {/* Add your add product logic here */ }} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 active:scale-95">
                         <Plus size={14} /> Add
                       </button>
                     )}
