@@ -552,7 +552,7 @@ export default function ProductsPage() {
           <AnimatePresence mode="popLayout">
             {globalProductList.map((product) => {
               const alreadyAdded = productList.some((p) => p.globalProductId === product.id);
-              // console.log(productList)
+              // console.log(alreadyAdded)
               const firstImage = product.images?.[0] || "/placeholder.png";
               const primaryPrice = product.pricing?.[0]?.price ?? 0;
 

@@ -288,7 +288,7 @@ export const ShopService = {
     return response.data.data;
   },
   addProductFromGlobalCatalog: async (data: AddProductFromGlobalProduct) => {
-    console.log("selected data for add product from globel", data)
+    // console.log("selected data for add product from globel", data)
     const response = await axios.post(
       "/shops/products/add-shop-product-from-global-catalog",
       data
