@@ -2,18 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { AdminService } from "@/services/adminService";
-import { 
-  ArrowLeft, 
-  Save, 
-  Plus, 
-  Trash2, 
-  Upload, 
+import {
+  ArrowLeft,
+  Save,
+  Plus,
+  Trash2,
+  Upload,
   Image as ImageIcon,
   DollarSign,
   Package,
   Loader2
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface ProductCategory {
   id: number;
@@ -21,29 +22,29 @@ interface ProductCategory {
   description: string;
 }
 
-interface PriceOption {
-  price: number;
-  discount: number;
-  weight: number;
-  unit: string;
-  stock: number;
-}
+// interface PriceOption {
+//   price: number;
+//   discount: number;
+//   weight: number;
+//   unit: string;
+//   stock: number;
+// }
 
 export default function AddGlobalProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
-  
+
   // Form State
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<number | "">("");
-  
+
   const [images, setImages] = useState<string[]>([""]);
-  const [pricing, setPricing] = useState<PriceOption[]>([
-    { price: 0, discount: 0, weight: 0, unit: "grams", stock: 0 }
-  ]);
+  // const [pricing, setPricing] = useState<PriceOption[]>([
+  //   { price: 0, discount: 0, weight: 0, unit: "grams", stock: 0 }
+  // ]);
 
   useEffect(() => {
     fetchCategories();
@@ -60,35 +61,35 @@ export default function AddGlobalProductPage() {
 
   // --- Handlers ---
 
-  const handleImageChange = (index: number, value: string) => {
-    const newImages = [...images];
-    newImages[index] = value;
-    setImages(newImages);
-  };
+  // const handleImageChange = (index: number, value: string) => {
+  //   const newImages = [...images];
+  //   newImages[index] = value;
+  //   setImages(newImages);
+  // };
 
-  const addImageField = () => {
-    setImages([...images, ""]);
-  };
+  // const addImageField = () => {
+  //   setImages([...images, ""]);
+  // };
 
-  const removeImageField = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    setImages(newImages.length ? newImages : [""]);
-  };
+  // const removeImageField = (index: number) => {
+  //   const newImages = images.filter((_, i) => i !== index);
+  //   setImages(newImages.length ? newImages : [""]);
+  // };
 
-  const handlePriceChange = (index: number, field: keyof PriceOption, value: any) => {
-    const newPricing = [...pricing];
-    newPricing[index] = { ...newPricing[index], [field]: value };
-    setPricing(newPricing);
-  };
+  // const handlePriceChange = (index: number, field: keyof PriceOption, value: any) => {
+  //   const newPricing = [...pricing];
+  //   newPricing[index] = { ...newPricing[index], [field]: value };
+  //   setPricing(newPricing);
+  // };
 
-  const addPriceOption = () => {
-    setPricing([...pricing, { price: 0, discount: 0, weight: 0, unit: "grams", stock: 0 }]);
-  };
+  // const addPriceOption = () => {
+  //   setPricing([...pricing, { price: 0, discount: 0, weight: 0, unit: "grams", stock: 0 }]);
+  // };
 
-  const removePriceOption = (index: number) => {
-    const newPricing = pricing.filter((_, i) => i !== index);
-    setPricing(newPricing.length ? newPricing : [{ price: 0, discount: 0, weight: 0, unit: "grams", stock: 0 }]);
-  };
+  // const removePriceOption = (index: number) => {
+  //   const newPricing = pricing.filter((_, i) => i !== index);
+  //   setPricing(newPricing.length ? newPricing : [{ price: 0, discount: 0, weight: 0, unit: "grams", stock: 0 }]);
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +97,7 @@ export default function AddGlobalProductPage() {
       alert("Please select a category");
       return;
     }
-    
+
     // Filter out empty images
     const validImages = images.filter(img => img.trim() !== "");
     if (validImages.length === 0) {
@@ -112,19 +113,19 @@ export default function AddGlobalProductPage() {
         brand: brand || undefined,
         description: description || undefined,
         images: validImages,
-        pricing: pricing.map(p => ({
-            ...p,
-            price: Number(p.price),
-            discount: Number(p.discount),
-            weight: Number(p.weight),
-            stock: Number(p.stock),
-        }))
+        // pricing: pricing.map(p => ({
+        //   ...p,
+        //   price: Number(p.price),
+        //   discount: Number(p.discount),
+        //   weight: Number(p.weight),
+        //   stock: Number(p.stock),
+        // }))
       };
 
       await AdminService.createGlobalProduct(payload);
       alert("Product created successfully!");
       // Reset form or redirect
-      router.push("/admin"); 
+      router.push("/admin");
     } catch (error) {
       console.error("Failed to create product", error);
       alert("Failed to create product. Check console for details.");
@@ -136,11 +137,11 @@ export default function AddGlobalProductPage() {
   return (
     <div className="space-y-6 pb-24">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => router.back()}
           className="p-2 rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors"
         >
-          <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300"/>
+          <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add Global Product</h1>
@@ -149,20 +150,20 @@ export default function AddGlobalProductPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* --- Left Column: Basic Details --- */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
             <h3 className="font-semibold text-lg text-gray-800 dark:text-white mb-4">Product Details</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Product Name *</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   required
                   className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g. Basmati Rice"
@@ -171,10 +172,10 @@ export default function AddGlobalProductPage() {
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand Name</label>
-                <input 
-                  type="text" 
-                  value={brand} 
-                  onChange={(e) => setBrand(e.target.value)} 
+                <input
+                  type="text"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
                   className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g. India Gate"
                 />
@@ -183,13 +184,13 @@ export default function AddGlobalProductPage() {
 
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category *</label>
-              <select 
-                value={categoryId} 
+              <select
+                value={categoryId}
                 onChange={(e) => setCategoryId(Number(e.target.value))}
-                required 
-                className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+                className="w-full px-4 py-2 h-10 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="">Select Category</option>
+                <option value="" className="text-gray-500">Select Category</option>
                 {categories.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -198,8 +199,8 @@ export default function AddGlobalProductPage() {
 
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-              <textarea 
-                value={description} 
+              <textarea
+                value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-indigo-500"
@@ -209,7 +210,7 @@ export default function AddGlobalProductPage() {
           </div>
 
           {/* --- Detailed Pricing --- */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+          {/* <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-lg text-gray-800 dark:text-white">Pricing & Variants</h3>
               <button type="button" onClick={addPriceOption} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
@@ -293,100 +294,100 @@ export default function AddGlobalProductPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* --- Right Column: Images & Publish --- */}
         <div className="space-y-6">
-            
+
           {/* Image Upload */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-             <h3 className="font-semibold text-lg text-gray-800 dark:text-white mb-4">Product Images</h3>
-             <div className="space-y-4">
-                
-                {/* Upload Button */}
-                <div>
-                  <label htmlFor="image-upload" className="cursor-pointer w-full py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col items-center justify-center gap-2">
-                      <Upload size={32} className="text-gray-400" />
-                      <span className="text-sm font-medium">Click to upload images</span>
-                  </label>
-                  <input 
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={async (e) => {
-                      if (!e.target.files?.length) return;
-                      const files = Array.from(e.target.files);
-                      
-                      try {
-                        setIsLoading(true);
-                        
-                        // 1. Get Signed URLs using defined axiosInstance
-                        const { data: { files: signedData } } = await import("@/lib/axios").then(m => m.default.post("/uploads/product", {
-                          files: files.map(f => ({ fileName: f.name, contentType: f.type }))
-                        }));
+            <h3 className="font-semibold text-lg text-gray-800 dark:text-white mb-4">Product Images</h3>
+            <div className="space-y-4">
 
-                        // 2. Upload to GCS
-                        await Promise.all(signedData.map(async (fileData: any, i: number) => {
-                           await fetch(fileData.signedUrl, {
-                             method: 'PUT',
-                             body: files[i],
-                             headers: { 'Content-Type': files[i].type }
-                           });
-                        }));
+              {/* Upload Button */}
+              <div>
+                <label htmlFor="image-upload" className="cursor-pointer w-full py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col items-center justify-center gap-2">
+                  <Upload size={32} className="text-gray-400" />
+                  <span className="text-sm font-medium">Click to upload images</span>
+                </label>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    if (!e.target.files?.length) return;
+                    const files = Array.from(e.target.files);
 
-                        // 3. Update State with Public URLs
-                        const newUrls = signedData.map((d: any) => d.publicUrl);
-                        setImages(prev => [...prev.filter(url => url.trim() !== ""), ...newUrls]);
+                    try {
+                      setIsLoading(true);
 
-                      } catch (error) {
-                        console.error("Upload failed", error);
-                        alert("Failed to upload images");
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                  />
+                      // 1. Get Signed URLs using defined axiosInstance
+                      const { data: { files: signedData } } = await import("@/lib/axios").then(m => m.default.post("/uploads/product", {
+                        files: files.map(f => ({ fileName: f.name, contentType: f.type }))
+                      }));
+
+                      // 2. Upload to GCS
+                      await Promise.all(signedData.map(async (fileData: any, i: number) => {
+                        await fetch(fileData.signedUrl, {
+                          method: 'PUT',
+                          body: files[i],
+                          headers: { 'Content-Type': files[i].type }
+                        });
+                      }));
+
+                      // 3. Update State with Public URLs
+                      const newUrls = signedData.map((d: any) => d.publicUrl);
+                      setImages(prev => [...prev.filter(url => url.trim() !== ""), ...newUrls]);
+
+                    } catch (error) {
+                      console.error("Upload failed", error);
+                      alert("Failed to upload images");
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Preview Grid */}
+              {images.filter(i => i).length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {images.filter(i => i).map((img, i) => (
+                    <div key={i} className="aspect-square rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden relative border border-gray-200 dark:border-gray-600 group">
+                      <Image height={100} width={100} src={img} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newImages = images.filter(url => url !== img);
+                          setImages(newImages.length ? newImages : [""]);
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-
-                {/* Preview Grid */}
-                {images.filter(i => i).length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                      {images.filter(i => i).map((img, i) => (
-                          <div key={i} className="aspect-square rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden relative border border-gray-200 dark:border-gray-600 group">
-                              <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover" />
-                              <button 
-                                  type="button"
-                                  onClick={() => {
-                                    const newImages = images.filter(url => url !== img);
-                                    setImages(newImages.length ? newImages : [""]);
-                                  }}
-                                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                  <Trash2 size={14} />
-                              </button>
-                          </div>
-                      ))}
-                  </div>
-                )}
-             </div>
+              )}
+            </div>
           </div>
 
           {/* Action Buttons */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4 sticky top-6">
-              <h3 className="font-semibold text-gray-800 dark:text-white">Publish Action</h3>
-              <p className="text-xs text-gray-500">Ensure all details are correct before publishing to the global catalog.</p>
-              
-              <button 
-                type="submit" 
-                disabled={isLoading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                  Publish Product
-              </button>
+            <h3 className="font-semibold text-gray-800 dark:text-white">Publish Action</h3>
+            <p className="text-xs text-gray-500">Ensure all details are correct before publishing to the global catalog.</p>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+              Publish Product
+            </button>
           </div>
 
         </div>
