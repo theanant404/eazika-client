@@ -77,8 +77,18 @@ const fetchProductsData = async (set: Set) => {
 const fetchGlobalProductsData = async (set: Set) => {
   set({ isLoading: true });
   try {
-    const data = await shopService.getGlobalProducts();
-    set({ globalProducts: data });
+    const raw = await shopService.getGlobalProducts();
+    // API sometimes returns { globalProducts: [...] } instead of { products: [...] }
+    const normalized = {
+      products: (raw as any)?.products ?? (raw as any)?.globalProducts ?? [],
+      pagination: (raw as any)?.pagination ?? {
+        currentPage: 1,
+        itemsPerPage: 10,
+        totalItems: 0,
+        totalPages: 0,
+      },
+    } as GlobalProductListType;
+    set({ globalProducts: normalized });
   } finally {
     set({ isLoading: false });
   }

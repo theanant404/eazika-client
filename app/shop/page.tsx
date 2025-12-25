@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   TrendingUp,
   Package,
@@ -52,6 +52,16 @@ export default function ShopDashboard() {
 
     loadDashboardData();
   }, [feathCurrentOrders, currentOders.orders.length]);
+
+  const uniqueOrders = useMemo(() => {
+    const seen = new Map<number | string, (typeof currentOders.orders)[number]>();
+    currentOders.orders.forEach((order) => {
+      if (!seen.has(order.id)) {
+        seen.set(order.id, order);
+      }
+    });
+    return Array.from(seen.values());
+  }, [currentOders.orders]);
 
   // Helper to construct stat cards
   const stats = [
@@ -128,11 +138,10 @@ export default function ShopDashboard() {
                 </div>
                 {stat.change && (
                   <span
-                    className={`text-[10px] font-bold flex items-center px-2 py-1 rounded-full ${
-                      isNewShop
+                    className={`text-[10px] font-bold flex items-center px-2 py-1 rounded-full ${isNewShop
                         ? "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
                         : "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
-                    }`}
+                      }`}
                   >
                     {stat.change}{" "}
                     {!isNewShop && hasPositiveChange && (
@@ -157,7 +166,7 @@ export default function ShopDashboard() {
           <h2 className="font-bold text-lg text-gray-900 dark:text-white">
             Recent Orders
           </h2>
-          {currentOders.orders.length > 0 && (
+          {uniqueOrders.length > 0 && (
             <Link
               href="/shop/history"
               className="text-sm text-yellow-600 font-medium hover:underline"
@@ -167,9 +176,9 @@ export default function ShopDashboard() {
           )}
         </div>
         <div className="flex-1 flex flex-col">
-          {currentOders.orders.length > 0 ? (
+          {uniqueOrders.length > 0 ? (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {currentOders.orders
+              {uniqueOrders
                 .filter(
                   (order) =>
                     order.status !== "delivered" && order.status !== "cancelled"
@@ -225,23 +234,23 @@ export default function ShopDashboard() {
                             order.status === "pending"
                               ? "bg-yellow-100 text-yellow-700"
                               : order.status === "confirmed"
-                              ? "bg-blue-100 text-blue-700"
-                              : order.status === "shipped"
-                              ? "bg-purple-100 text-purple-700"
-                              : order.status === "delivered"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
+                                ? "bg-blue-100 text-blue-700"
+                                : order.status === "shipped"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : order.status === "delivered"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
                           )}
                         >
                           {order.status === "pending"
                             ? "Pending"
                             : order.status === "confirmed"
-                            ? "Confirmed"
-                            : order.status === "shipped"
-                            ? "Ready for Delivery"
-                            : order.status === "delivered"
-                            ? "Delivered"
-                            : "Cancelled"}
+                              ? "Confirmed"
+                              : order.status === "shipped"
+                                ? "Ready for Delivery"
+                                : order.status === "delivered"
+                                  ? "Delivered"
+                                  : "Cancelled"}
                         </span>
                       </div>
                     </div>
@@ -277,9 +286,7 @@ export default function ShopDashboard() {
         {/* pagination */}
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end items-center gap-x-2">
           <button
-            disabled={
-              (currentOders.pagination?.currentPage || 1) <= 1 ? true : false
-            }
+            disabled={(currentOders.pagination?.currentPage || 1) <= 1}
             onClick={async () => {
               await feathCurrentOrders(
                 (currentOders.pagination?.currentPage || 1) - 1,
@@ -292,15 +299,12 @@ export default function ShopDashboard() {
           </button>
 
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {currentOders.pagination?.currentPage || 1} of{" "}
-            {currentOders.pagination?.totalItems || 10} orders
+            Showing {currentOders.pagination?.currentPage || 1} of {uniqueOrders.length || 0} orders
           </p>
           <button
             disabled={
               (currentOders.pagination?.currentPage || 1) >=
               (currentOders.pagination?.totalPages || 1)
-                ? true
-                : false
             }
             onClick={async () => {
               await feathCurrentOrders();

@@ -261,12 +261,15 @@ export const ShopService = {
   },
 
   getShopProducts: async (): Promise<ShopProductListType> => {
+    // console.log("Fetching shop products...");
     const response = await axios.get("/shops/products/get-all-product");
     return response.data.data;
   },
 
   getGlobalProducts: async (): Promise<GlobalProductListType> => {
+    console.log("Fetching global products...");
     const response = await axios.get("/shops/products/get-all-global-product");
+    // console.log("getGlobalProducts response:", response);
     return response.data.data;
   },
 

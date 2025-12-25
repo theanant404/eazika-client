@@ -41,7 +41,8 @@ const TABS: Tab[] = [
 ];
 
 export default function ProductsPage() {
-  const { products, globalProducts, fetchProducts } = shopStore();
+  const { products, globalProducts, fetchProducts, featchGlobalProducts } = shopStore();
+  // console.log('Global Products line 45', globalProducts)
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
     "inventory" | "global" | "my_products"
@@ -68,6 +69,10 @@ export default function ProductsPage() {
     stock: 0,
     unit: "grams",
   };
+
+  const productList = products?.products ?? [];
+  const globalProductList = globalProducts?.products ?? [];
+  console.log("Global Products in component:", globalProducts);
 
   const normalizePricing = (value: unknown): ProductPriceType[] => {
     if (!value || typeof value !== "object") return [{ ...FALLBACK_PRICE }];
@@ -98,7 +103,7 @@ export default function ProductsPage() {
   useEffect(() => {
     const map: Record<number, ProductPriceType[]> = {};
     const originals: Record<number, ProductPriceType[]> = {};
-    products.products.forEach((p) => {
+    productList.forEach((p) => {
       const pricing = normalizePricing(p);
       if (p.id !== undefined && p.id !== null) {
         map[Number(p.id)] = pricing;
@@ -110,7 +115,7 @@ export default function ProductsPage() {
     // reset dirty flags when list refreshes
     setDirtyProductIds(new Set());
     setUnsavedChanges(false);
-  }, [products.products]);
+  }, [productList]);
 
   // warn on browser/tab close when there are unsaved inline edits
   useEffect(() => {
@@ -127,9 +132,10 @@ export default function ProductsPage() {
 
   useEffect(() => {
     (async () => {
-      if (products.products.length === 0) await fetchProducts();
+      if (productList.length === 0) await fetchProducts();
+      if (globalProductList.length === 0) await featchGlobalProducts();
     })();
-  }, [fetchProducts, products.products.length]);
+  }, [fetchProducts, featchGlobalProducts, productList.length, globalProductList.length]);
 
   const openEditModal = async (id: number | string) => {
     const numericId = Number(id);
@@ -139,7 +145,7 @@ export default function ProductsPage() {
     setEditLoading(true);
     setEditingId(numericId);
 
-    const productFromStore = products.products.find((p) => Number(p.id) === numericId);
+    const productFromStore = productList.find((p) => Number(p.id) === numericId);
     if (productFromStore) {
       const pricing = normalizePricing(productFromStore);
 
@@ -243,7 +249,7 @@ export default function ProductsPage() {
       if (changedPrices.length > 0) payload.prices = changedPrices;
       if (stockChanged) payload.stock = pricing[0]?.stock ?? 0;
 
-      await shopService.updateStock(payload);
+      await shopService.updateProductDetails(productId, payload);
       await fetchProducts();
       setDirtyProductIds((prev) => {
         const next = new Set(prev);
@@ -295,7 +301,7 @@ export default function ProductsPage() {
     setExitPromptOpen(true);
   };
 
-  const filteredProducts = products.products.filter((p) =>
+  const filteredProducts = productList.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -373,7 +379,7 @@ export default function ProductsPage() {
           className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-base focus:ring-2 focus:ring-yellow-500 outline-none transition-all shadow-sm"
         />
       </div>
-      {activeTab === "inventory" && products.products.length > 0 && (
+      {activeTab === "inventory" && productList.length > 0 && (
         <table className="w-full text-left mt-8 border-collapse">
           <thead className="bg-gray-100 dark:bg-gray-700">
             <tr>
@@ -535,73 +541,84 @@ export default function ProductsPage() {
           </tbody>
         </table>
       )}
-      {activeTab === "global" && globalProducts.products.length > 0 && (
+      {activeTab === "global" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
-            {globalProducts.products.map((product) => (
-              <motion.div
-                key={product.id}
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700"
-              >
-                <div className="flex gap-3 md:gap-4 ">
-                  <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shrink-0 self-start">
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      layout="fill"
-                      objectFit="cover"
-                    />
-                  </div>
+            {globalProductList.map((product) => {
+              const alreadyAdded = productList.some((p) => p.id === product.id);
+              const firstImage = product.images?.[0] || "/placeholder.png";
+              const primaryPrice = product.pricing?.[0]?.price ?? 0;
 
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                    <div>
-                      <div className="flex justify-between items-start mb-1">
-                        <h3
-                          className="font-bold text-gray-900 dark:text-white text-sm md:text-base line-clamp-2 leading-tight mr-6"
-                          title={product.name}
-                        >
-                          {product.name}
-                        </h3>
+              return (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700"
+                >
+                  <div className="flex gap-3 md:gap-4 ">
+                    <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shrink-0 self-start">
+                      <Image
+                        src={firstImage}
+                        alt={product.name}
+                        layout="fill"
+                        objectFit="cover"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                      <div>
+                        <div className="flex justify-between items-start mb-1">
+                          <h3
+                            className="font-bold text-gray-900 dark:text-white text-sm md:text-base line-clamp-2 leading-tight mr-6"
+                            title={product.name}
+                          >
+                            {product.name}
+                          </h3>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {product.category}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {product.category}
-                      </p>
-                    </div>
 
-                    <div className="mt-3 flex flex-wrap items-end justify-between gap-y-2">
-                      <span className="font-bold text-gray-900 dark:text-white text-base md:text-lg">
-                        ₹{product.pricing[0].price}
-                      </span>
+                      <div className="mt-3 flex flex-wrap items-end justify-between gap-y-2">
+                        <span className="font-bold text-gray-900 dark:text-white text-base md:text-lg">
+                          ₹{primaryPrice}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-3 flex flex-wrap items-end justify-between gap-y-2">
-                  <div className="flex items-center gap-2"></div>
-                  {products.products.filter((p) => p.id === product.id) ? (
-                    <button
-                      disabled
-                      className="bg-green-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-default"
-                    >
-                      <Check size={14} /> Added
-                    </button>
-                  ) : (
-                    <button className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 active:scale-95">
-                      <Plus size={14} /> Add
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                  <div className="mt-3 flex flex-wrap items-end justify-between gap-y-2">
+                    <div className="flex items-center gap-2"></div>
+                    {alreadyAdded ? (
+                      <button
+                        disabled
+                        className="bg-green-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-default"
+                      >
+                        <Check size={14} /> Added
+                      </button>
+                    ) : (
+                      <button className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 active:scale-95">
+                        <Plus size={14} /> Add
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
+          {globalProductList.length === 0 && (
+            <div className="col-span-full text-center text-sm text-gray-500 dark:text-gray-400 py-6">
+              No global products available.
+            </div>
+          )}
         </div>
       )}
       {activeTab === "my_products" &&
-        products.products.filter((p) => p.isGlobalProduct != true).length >
+        productList.filter((p) => p.isGlobalProduct != true).length >
         0 && (
           <table className="w-full text-left mt-8 border-collapse">
             <thead className="">
