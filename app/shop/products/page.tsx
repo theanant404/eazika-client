@@ -817,7 +817,6 @@ export default function ProductsPage() {
                   onSubmit={async (data) => {
                     const payload = {
                       ...data,
-                      prices: data.pricing,
                       stock: data.pricing?.[0]?.stock ?? 0,
                     };
 
