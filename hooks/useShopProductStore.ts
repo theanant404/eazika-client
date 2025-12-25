@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { ShopService, ShopProduct } from '@/services/shopService';
+import { ProductPriceType } from '@/types/shop';
 
 interface ShopProductState {
   products: ShopProduct[];
   isLoading: boolean;
   activeTab: string;
-  
+
   // Actions
   setTab: (tab: string) => void;
   fetchProducts: () => Promise<void>;
@@ -54,7 +55,7 @@ export const useShopProductStore = create<ShopProductState>((set, get) => ({
 
     // Optimistic Update
     set(state => ({
-      products: state.products.map(p => 
+      products: state.products.map(p =>
         p.id === id ? { ...p, stock: newStock } : p
       )
     }));
@@ -62,20 +63,24 @@ export const useShopProductStore = create<ShopProductState>((set, get) => ({
     try {
       // Find the price variant to update (assuming first one)
       const priceVariant = product.prices?.[0];
-      
-      if (priceVariant && priceVariant.id) {
-        // Construct the full payload required by ProductPriceType
-        // Note: We use priceVariant.id as the ID passed to the service (which expects priceId)
-        await ShopService.updateStock(priceVariant.id, {
-          stock: newStock,
+
+      if (priceVariant) {
+        const pricePayload: ProductPriceType = {
+          id: priceVariant.id,
           price: priceVariant.price,
+          discount: priceVariant.discount ?? 0,
           weight: priceVariant.weight,
-          unit: priceVariant.unit as any, // Cast to match strict union type if needed
-          discount: priceVariant.discount,
-          currency: priceVariant.currency
+          unit: (priceVariant.unit as ProductPriceType['unit']) ?? 'grams',
+          currency: priceVariant.currency,
+          stock: newStock,
+        };
+
+        await ShopService.updateStock({
+          stock: newStock,
+          prices: [pricePayload],
         });
       } else {
-         console.warn("No price variant found to update stock for product", id);
+        console.warn("No price variant found to update stock for product", id);
       }
     } catch (error) {
       console.error("Stock update failed", error);
@@ -91,7 +96,7 @@ export const useShopProductStore = create<ShopProductState>((set, get) => ({
 
     // Optimistic Update
     set(state => ({
-      products: state.products.map(p => 
+      products: state.products.map(p =>
         p.id === id ? { ...p, isActive: newStatus } : p
       )
     }));
@@ -110,10 +115,10 @@ export const useShopProductStore = create<ShopProductState>((set, get) => ({
     }));
 
     try {
-       // Assuming ShopService has a delete method (we'll add it)
-       await ShopService.deleteProduct(id); 
+      // Assuming ShopService has a delete method (we'll add it)
+      await ShopService.deleteProduct(id);
     } catch (error) {
-       console.error("Delete failed", error);
+      console.error("Delete failed", error);
     }
   },
 
