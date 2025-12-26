@@ -14,6 +14,9 @@ export async function proxy(req: NextRequest) {
   // Check if it's a public route
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
+  // Admin can access everything once authenticated
+  const isAdmin = userRole === "admin";
+
   // If user is logged in and trying to access auth pages, redirect to home
   if (token && (pathname.startsWith("/login") || pathname.startsWith("/register"))) {
     // Allow role-specific login pages like /login/admin to pass through for redirect handling
@@ -28,63 +31,41 @@ export async function proxy(req: NextRequest) {
 
   // If user has token, check role-based access
   if (token) {
+    // Admin bypasses all checks
+    if (isAdmin) return NextResponse.next();
+
     // ADMIN ROUTES - Only admin can access
     if (pathname.startsWith("/admin")) {
-      if (userRole !== "admin") {
-        return NextResponse.redirect(
-          new URL("/?msg=unauthorized_access", req.url)
-        );
-      }
-      return NextResponse.next();
+      return NextResponse.redirect(new URL("/?msg=unauthorized_access", req.url));
     }
 
-    // SHOP ROUTES - Only shopkeeper can access (except registration)
+    // SHOP ROUTES - Shopkeeper or admin (handled above); registration open for users
     if (pathname.startsWith("/shop")) {
-      // Allow users to register as shopkeeper
-      if (pathname === "/shop/register" && userRole === "user") {
-        return NextResponse.next();
-      }
-      // Shopkeepers who try to register again, redirect to shop dashboard
+      if (pathname === "/shop/register" && userRole === "user") return NextResponse.next();
       if (pathname === "/shop/register" && userRole === "shopkeeper") {
         return NextResponse.redirect(new URL("/shop", req.url));
       }
-      // All other shop routes require shopkeeper role
       if (userRole !== "shopkeeper") {
-        return NextResponse.redirect(
-          new URL("/?msg=unauthorized_access", req.url)
-        );
+        return NextResponse.redirect(new URL("/?msg=unauthorized_access", req.url));
       }
       return NextResponse.next();
     }
 
-    // RIDER ROUTES - Only delivery_boy can access (except registration)
+    // RIDER ROUTES - Delivery or admin (handled above); registration open for users
     if (pathname.startsWith("/rider")) {
-      // Allow users to register as rider
-      if (pathname === "/rider/register" && userRole === "user") {
-        return NextResponse.next();
-      }
-      // Riders who try to register again, redirect to rider dashboard
+      if (pathname === "/rider/register" && userRole === "user") return NextResponse.next();
       if (pathname === "/rider/register" && userRole === "delivery_boy") {
         return NextResponse.redirect(new URL("/rider", req.url));
       }
-      // All other rider routes require delivery_boy role
       if (userRole !== "delivery_boy") {
-        return NextResponse.redirect(
-          new URL("/?msg=unauthorized_access", req.url)
-        );
+        return NextResponse.redirect(new URL("/?msg=unauthorized_access", req.url));
       }
       return NextResponse.next();
     }
 
-    // CUSTOMER ROUTES - Accessible by regular users only
-    // Admin, shopkeeper, and delivery_boy shouldn't access customer-specific pages
-    const customerOnlyRoutes = ["/cart", "/checkout", "/wishlist"];
-    if (customerOnlyRoutes.some(route => pathname.startsWith(route))) {
-      if (userRole !== "user") {
-        return NextResponse.redirect(
-          new URL("/?msg=unauthorized_access", req.url)
-        );
-      }
+    // CUSTOMER ROUTES - riders and shopkeepers can also access
+    const customerRoutes = ["/cart", "/checkout", "/wishlist"];
+    if (customerRoutes.some(route => pathname.startsWith(route))) {
       return NextResponse.next();
     }
   }
