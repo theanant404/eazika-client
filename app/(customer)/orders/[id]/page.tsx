@@ -117,7 +117,7 @@ export default function OrderDetailsPage() {
           const response: any = await CartService.trackOrder(order.id);
           // Adjust based on actual API response structure
           if (response) {
-             setTrackingData(response);
+            setTrackingData(response);
           }
         } catch (e) {
           console.error("Tracking Error:", e);
@@ -230,9 +230,8 @@ export default function OrderDetailsPage() {
               className={`w-14 h-14 rounded-full ${statusInfo.bg} flex items-center justify-center shrink-0`}
             >
               <statusInfo.icon
-                className={`w-7 h-7 ${statusInfo.color} ${
-                  statusInfo.animate ? "animate-spin" : ""
-                }`}
+                className={`w-7 h-7 ${statusInfo.color} ${statusInfo.animate ? "animate-spin" : ""
+                  }`}
               />
             </div>
             <div>
@@ -283,7 +282,7 @@ export default function OrderDetailsPage() {
                   lng: trackingData.deliveryBoy.currentLng,
                 }}
                 zoom={14}
-                options={{ 
+                options={{
                   disableDefaultUI: true,
                   styles: [
                     { featureType: "poi", stylers: [{ visibility: "off" }] },
@@ -303,7 +302,7 @@ export default function OrderDetailsPage() {
                     anchor: new window.google.maps.Point(22, 22),
                   }}
                 />
-                
+
                 {/* Route Polyline */}
                 {directionsResponse && (
                   <DirectionsRenderer
@@ -319,7 +318,7 @@ export default function OrderDetailsPage() {
                   />
                 )}
               </GoogleMap>
-              
+
               {/* Live Tracker Badge */}
               <div className="absolute top-3 left-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-bold shadow-md text-gray-800 dark:text-white flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
@@ -328,7 +327,7 @@ export default function OrderDetailsPage() {
                 </span>
                 Live Tracker
               </div>
-              
+
               {/* ETA Badge */}
               {directionsResponse?.routes[0]?.legs[0] && (
                 <div className="absolute bottom-3 left-3 right-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur px-4 py-2.5 rounded-xl shadow-lg flex items-center justify-between">

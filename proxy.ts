@@ -64,7 +64,7 @@ export async function proxy(req: NextRequest) {
     }
 
     // CUSTOMER ROUTES - riders and shopkeepers can also access
-    const customerRoutes = ["/cart", "/checkout", "/wishlist"];
+    const customerRoutes = ["/cart", "/checkout", "/wishlist", "/orders", "/profile", "/"];
     if (customerRoutes.some(route => pathname.startsWith(route))) {
       return NextResponse.next();
     }

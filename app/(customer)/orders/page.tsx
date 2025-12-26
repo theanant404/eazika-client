@@ -30,17 +30,18 @@ const getStatusInfo = (status: string) => {
 const OrderCard = ({ order }: { order: Order }) => {
   const router = useRouter();
   const isLive = !['delivered', 'cancelled'].includes(order.status);
-
+  // console.log(isLive)
   const handleCardClick = () => {
+    // Live orders go to tracking page, completed to details page
     if (isLive) {
-      router.push(`/orders/track-order?id=${order.id}`);
+      router.push(`/orders/track-order/${order.id}`);
     } else {
       router.push(`/orders/${order.id}`);
     }
   };
 
   const statusInfo = getStatusInfo(order.status);
-
+  console.log(order)
   return (
     <motion.div
       layout
