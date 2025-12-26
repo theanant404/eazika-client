@@ -189,12 +189,11 @@ function DeliveryRegistrationContent() {
 
       // Update cookie to 'delivery_boy' manually so they can access dashboard immediately
       // The backend updates the role in DB, but client-side cookie needs update for Middleware to pass
-      document.cookie = `userRole=delivery_boy; path=/; max-age=${
-        7 * 24 * 60 * 60
-      }`;
+      document.cookie = `userRole=delivery_boy; path=/; max-age=${7 * 24 * 60 * 60
+        }`;
 
       toast.success("Delivery profile created successfully!");
-      router.push("/delivery"); // Redirect to dashboard
+      router.push("/rider"); // Redirect to dashboard
     } catch (error: any) {
       console.error("Registration error:", error);
       const errorMessage =
