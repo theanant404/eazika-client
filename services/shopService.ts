@@ -329,7 +329,7 @@ export const ShopService = {
     productId: number,
     data: Partial<UpdateProductPayload>
   ) => {
-    console.log("Updating product:", productId, data);
+    // console.log("Updating product:", productId, data);
     const response = await axiosInstance.put(
       `/shops/products/update-shop-product/${productId}`,
       data
