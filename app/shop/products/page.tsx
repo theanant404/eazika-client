@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Plus, Package, Globe, Box, Check, Loader2, X } from "lucide-react";
+import { Search, Plus, Package, Globe, Box, Check, Loader2, X, Save, Edit2, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -334,7 +334,7 @@ export default function ProductsPage() {
       if (changedPrices.length > 0) payload.prices = changedPrices;
       if (stockChanged) payload.stock = pricing[0]?.stock ?? 0;
 
-      await shopService.updateProductDetails(productId, payload);
+      await shopService.updateStock(payload);
       await fetchProducts();
       setDirtyProductIds((prev) => {
         const next = new Set(prev);
@@ -612,17 +612,17 @@ export default function ProductsPage() {
                     <button
                       type="button"
                       onClick={() => openEditModal(product.id)}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition"
                     >
-                      Edit
+                      <Edit />
                     </button>
                     <button
                       type="button"
                       onClick={() => savePricing(Number(product.id))}
                       disabled={!dirtyProductIds.has(Number(product.id))}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-green-600 disabled:bg-gray-400 rounded-lg shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-green-600 disabled:bg-gray-400 rounded-lg shadow-sm hover:opacity-90 transition"
                     >
-                      Save Pricing
+                      <Save />
                     </button>
                   </div>
                 </td>
