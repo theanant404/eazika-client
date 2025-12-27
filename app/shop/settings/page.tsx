@@ -162,15 +162,28 @@ export default function ShopSettingsPage() {
     };
 
     const saveSchedule = () => {
-
+        const schedulePayload = {
+            isOnlineDelivery: onlineDelivery,
+            weeklySlots: slots.map((s) => ({
+                day: s.day,
+                isOpen: s.isOpen,
+                open: s.open,
+                close: s.close,
+            })),
+        };
+        console.log("[ShopSettings] Schedule payload:", schedulePayload);
         toast.success("Schedule saved");
     };
 
     const saveDeliveryBands = () => {
+        const pricingPayload = deliveryBands.map((b) => ({ km: b.km, price: b.price }));
+        console.log("[ShopSettings] Delivery pricing:", pricingPayload);
         toast.success("Delivery radius pricing saved");
     };
 
     const saveMinOrder = () => {
+        const payload = { minimumOrderValue: minOrderValue };
+        console.log("[ShopSettings] Minimum order:", payload);
         toast.success("Minimum order updated");
     };
 
