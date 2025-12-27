@@ -82,6 +82,29 @@ export default function ShopSettingsPage() {
         fetchUser();
     }, [fetchUser]);
 
+    // Prefill delivery slots from backend; fall back to defaults if unavailable
+    useEffect(() => {
+        (async () => {
+            try {
+                const slotsResponse = await ShopService.getShopDeliverySlots();
+                const weekly = slotsResponse?.data?.weeklySlots;
+                // console.log(weekly)
+                if (Array.isArray(weekly) && weekly.length > 0) {
+                    setSlots(weekly);
+                    const online = slotsResponse.data.isOnlineDelivery;
+                    if (typeof online === "boolean") {
+                        setOnlineDelivery(online);
+                    }
+                } else {
+                    setSlots(DEFAULT_SLOTS);
+                }
+            } catch (err) {
+                console.warn("Using default delivery slots", err);
+                setSlots(DEFAULT_SLOTS);
+            }
+        })();
+    }, []);
+
     useEffect(() => {
         if (!user && !primaryAddress) return;
         setAddressForm((prev) => {
@@ -171,10 +194,10 @@ export default function ShopSettingsPage() {
                 close: s.close,
             })),
         };
-        console.log("[ShopSettings] Schedule payload:", schedulePayload);
+        ShopService.shopDeliverySlots(schedulePayload)
+        // console.log("[ShopSettings] Schedule payload:", schedulePayload);
         toast.success("Schedule saved");
     };
-
     const saveDeliveryBands = () => {
         const pricingPayload = deliveryBands.map((b) => ({ km: b.km, price: b.price }));
         console.log("[ShopSettings] Delivery pricing:", pricingPayload);

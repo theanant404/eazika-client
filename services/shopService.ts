@@ -221,11 +221,12 @@ export const ShopService = {
     }
   },
 
-  getShopDeliverySlots: async (shopkeeperId: number) => {
+  getShopDeliverySlots: async () => {
     try {
       const response = await axiosInstance.get(
-        `/shops/schedule/${shopkeeperId}`
+        `/shops/schedule`
       );
+      // console.log("Fetched delivery slots:", response.data);
       return response.data;
     } catch (error) {
       console.error("Error fetching delivery slots:", error);
