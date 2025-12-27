@@ -51,6 +51,15 @@ export default function ShopSettingsPage() {
     const [minOrderValue, setMinOrderValue] = useState(0);
     const [primaryAddress, setPrimaryAddress] = useState<Address | null>(null);
     const [addressLoading, setAddressLoading] = useState<boolean>(true);
+    const [schedulesLoading, setSchedulesLoading] = useState(true);
+    const [deliveryBandsLoading, setDeliveryBandsLoading] = useState(true);
+    const [minOrderLoading, setMinOrderLoading] = useState(true);
+    const [scheduleDirty, setScheduleDirty] = useState(false);
+    const [deliveryBandsDirty, setDeliveryBandsDirty] = useState(false);
+    const [minOrderDirty, setMinOrderDirty] = useState(false);
+    const [savingSchedule, setSavingSchedule] = useState(false);
+    const [savingPricing, setSavingPricing] = useState(false);
+    const [savingMinOrder, setSavingMinOrder] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -98,6 +107,9 @@ export default function ShopSettingsPage() {
             } catch (err) {
                 console.warn("Using default delivery slots", err);
                 setSlots(DEFAULT_SLOTS);
+            } finally {
+                setSchedulesLoading(false);
+                setScheduleDirty(false);
             }
         })();
     }, []);
@@ -117,6 +129,9 @@ export default function ShopSettingsPage() {
             } catch (err) {
                 console.warn("Using default minimum order value", err);
                 setMinOrderValue(0);
+            } finally {
+                setMinOrderLoading(false);
+                setMinOrderDirty(false);
             }
         })();
     }, []);
@@ -135,25 +150,26 @@ export default function ShopSettingsPage() {
             } catch (err) {
                 console.warn("Using default delivery rates", err);
                 setDeliveryBands(DEFAULT_RADII);
+            } finally {
+                setDeliveryBandsLoading(false);
+                setDeliveryBandsDirty(false);
             }
         })();
     }, []);
 
     useEffect(() => {
         if (!user && !primaryAddress) return;
-        setAddressForm((prev) => {
-            const updated = { ...prev };
-            if (user) {
-                updated.name = user.name || prev.name;
-                updated.phone = user.phone || prev.phone;
-            }
-            if (primaryAddress && !isEditingAddress) {
-                return { ...primaryAddress };
-            }
-            return updated;
-        });
-        if (primaryAddress) {
-            setIsEditingAddress(false);
+        // Only refill form from primaryAddress when not editing
+        if (!isEditingAddress && primaryAddress) {
+            setAddressForm(primaryAddress);
+        }
+        // Prefill from user if available
+        if (user) {
+            setAddressForm((prev) => ({
+                ...prev,
+                name: user.name || prev.name,
+                phone: user.phone || prev.phone,
+            }));
         }
     }, [primaryAddress, user, isEditingAddress]);
 
@@ -216,9 +232,10 @@ export default function ShopSettingsPage() {
 
     const handleSlotChange = (idx: number, key: keyof WeeklySlot, value: string | boolean) => {
         setSlots((prev) => prev.map((slot, i) => (i === idx ? { ...slot, [key]: value } : slot)));
+        setScheduleDirty(true);
     };
 
-    const saveSchedule = () => {
+    const saveSchedule = async () => {
         const schedulePayload = {
             isOnlineDelivery: onlineDelivery,
             weeklySlots: slots.map((s) => ({
@@ -228,28 +245,69 @@ export default function ShopSettingsPage() {
                 close: s.close,
             })),
         };
-        ShopService.shopDeliverySlots(schedulePayload)
-        // console.log("[ShopSettings] Schedule payload:", schedulePayload);
-        toast.success("Schedule saved");
+        setSavingSchedule(true);
+        try {
+            await ShopService.shopDeliverySlots(schedulePayload)
+            toast.success("Schedule saved");
+            setScheduleDirty(false);
+        } catch (error) {
+            console.error("Failed to save schedule", error);
+            toast.error("Could not save schedule");
+        } finally {
+            setSavingSchedule(false);
+        }
     };
     const saveDeliveryBands = async () => {
         const pricingPayload = {
             rates: deliveryBands.map((b) => ({ km: b.km, price: b.price }))
         };
-        await ShopService.shopDeliveryRates(pricingPayload)
-        toast.success("Delivery radius pricing saved");
+        setSavingPricing(true);
+        try {
+            await ShopService.shopDeliveryRates(pricingPayload)
+            toast.success("Delivery radius pricing saved");
+            setDeliveryBandsDirty(false);
+        } catch (error) {
+            console.error("Failed to save delivery pricing", error);
+            toast.error("Could not save delivery pricing");
+        } finally {
+            setSavingPricing(false);
+        }
     };
 
 
     const saveMinOrder = async () => {
         const payload = { minimumOrderValue: minOrderValue };
-        await ShopService.shopMinimumOrder(payload)
-        toast.success("Minimum order updated");
+        setSavingMinOrder(true);
+        try {
+            await ShopService.shopMinimumOrder(payload)
+            toast.success("Minimum order updated");
+            setMinOrderDirty(false);
+        } catch (error) {
+            console.error("Failed to save minimum order", error);
+            toast.error("Could not save minimum order");
+        } finally {
+            setSavingMinOrder(false);
+        }
     };
 
 
     const renderAddressView = () => {
-        if (addressLoading || !primaryAddress || isEditingAddress) return null;
+        // Show loading skeleton while fetching
+        if (addressLoading) {
+            return (
+                <div className="space-y-3">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse w-48" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse w-32" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse w-full" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse w-40" />
+                </div>
+            );
+        }
+
+        // Show form if no address or editing
+        if (!primaryAddress || isEditingAddress) return null;
+
+        // Show address view
         return (
             <div className="bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-4 space-y-2">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{primaryAddress.name}</p>
@@ -303,7 +361,7 @@ export default function ShopSettingsPage() {
 
                     {renderAddressView()}
 
-                    {(isEditingAddress || !primaryAddress) && (
+                    {!addressLoading && (isEditingAddress || !primaryAddress) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="text-xs font-semibold text-gray-500 uppercase">Contact Name</label>
@@ -462,7 +520,10 @@ export default function ShopSettingsPage() {
                                 type="checkbox"
                                 className="sr-only"
                                 checked={onlineDelivery}
-                                onChange={(e) => setOnlineDelivery(e.target.checked)}
+                                onChange={(e) => {
+                                    setOnlineDelivery(e.target.checked);
+                                    setScheduleDirty(true);
+                                }}
                             />
                             <span className={`w-11 h-6 rounded-full transition ${onlineDelivery ? "bg-green-500" : "bg-gray-300"}`}>
                                 <span
@@ -473,44 +534,59 @@ export default function ShopSettingsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {slots.map((slot, idx) => (
-                            <div key={slot.day} className="flex items-center justify-between border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={slot.isOpen}
-                                        onChange={(e) => handleSlotChange(idx, "isOpen", e.target.checked)}
-                                        className="h-4 w-4"
-                                    />
-                                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{slot.day}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="time"
-                                        value={slot.open}
-                                        onChange={(e) => handleSlotChange(idx, "open", e.target.value)}
-                                        className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-2 py-1"
-                                        disabled={!slot.isOpen}
-                                    />
-                                    <span className="text-gray-500">to</span>
-                                    <input
-                                        type="time"
-                                        value={slot.close}
-                                        onChange={(e) => handleSlotChange(idx, "close", e.target.value)}
-                                        className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-2 py-1"
-                                        disabled={!slot.isOpen}
-                                    />
-                                </div>
+                        {schedulesLoading ? (
+                            <div className="col-span-full space-y-3">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+                                ))}
                             </div>
-                        ))}
+                        ) : (
+                            slots.map((slot, idx) => (
+                                <div key={slot.day} className="flex items-center justify-between border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={slot.isOpen}
+                                            onChange={(e) => {
+                                                handleSlotChange(idx, "isOpen", e.target.checked);
+                                            }}
+                                            className="h-4 w-4"
+                                        />
+                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{slot.day}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="time"
+                                            value={slot.open}
+                                            onChange={(e) => {
+                                                handleSlotChange(idx, "open", e.target.value);
+                                            }}
+                                            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-2 py-1"
+                                            disabled={!slot.isOpen}
+                                        />
+                                        <span className="text-gray-500">to</span>
+                                        <input
+                                            type="time"
+                                            value={slot.close}
+                                            onChange={(e) => {
+                                                handleSlotChange(idx, "close", e.target.value);
+                                            }}
+                                            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-2 py-1"
+                                            disabled={!slot.isOpen}
+                                        />
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                     <div className="flex justify-end">
                         <button
                             type="button"
                             onClick={saveSchedule}
-                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white"
+                            disabled={!scheduleDirty || savingSchedule || schedulesLoading}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Save schedule
+                            {savingSchedule ? "Saving..." : "Save schedule"}
                         </button>
                     </div>
                 </section>
@@ -534,51 +610,65 @@ export default function ShopSettingsPage() {
                     </div>
 
                     <div className="space-y-3">
-                        {deliveryBands.map((band, idx) => (
-                            <div key={`${band.km}-${idx}`} className="grid grid-cols-2 md:grid-cols-3 gap-3 items-center">
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase">Distance (km)</label>
-                                    <input
-                                        type="number"
-                                        value={band.km}
-                                        onChange={(e) => {
-                                            const km = parseFloat(e.target.value) || 0;
-                                            setDeliveryBands((prev) => prev.map((b, i) => (i === idx ? { ...b, km } : b)));
-                                        }}
-                                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase">Fee (₹)</label>
-                                    <input
-                                        type="number"
-                                        value={band.price}
-                                        onChange={(e) => {
-                                            const price = parseFloat(e.target.value) || 0;
-                                            setDeliveryBands((prev) => prev.map((b, i) => (i === idx ? { ...b, price } : b)));
-                                        }}
-                                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm"
-                                    />
-                                </div>
-                                <div className="flex justify-end md:justify-start">
-                                    <button
-                                        type="button"
-                                        onClick={() => setDeliveryBands((prev) => prev.filter((_, i) => i !== idx))}
-                                        className="px-3 py-2 rounded-xl text-sm font-semibold bg-red-100 text-red-700"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
+                        {deliveryBandsLoading ? (
+                            <div className="space-y-3">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+                                ))}
                             </div>
-                        ))}
+                        ) : (
+                            deliveryBands.map((band, idx) => (
+                                <div key={`${band.km}-${idx}`} className="grid grid-cols-2 md:grid-cols-3 gap-3 items-center">
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-500 uppercase">Distance (km)</label>
+                                        <input
+                                            type="number"
+                                            value={band.km}
+                                            onChange={(e) => {
+                                                const km = parseFloat(e.target.value) || 0;
+                                                setDeliveryBands((prev) => prev.map((b, i) => (i === idx ? { ...b, km } : b)));
+                                                setDeliveryBandsDirty(true);
+                                            }}
+                                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-500 uppercase">Fee (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={band.price}
+                                            onChange={(e) => {
+                                                const price = parseFloat(e.target.value) || 0;
+                                                setDeliveryBands((prev) => prev.map((b, i) => (i === idx ? { ...b, price } : b)));
+                                                setDeliveryBandsDirty(true);
+                                            }}
+                                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div className="flex justify-end md:justify-start">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setDeliveryBands((prev) => prev.filter((_, i) => i !== idx));
+                                                setDeliveryBandsDirty(true);
+                                            }}
+                                            className="px-3 py-2 rounded-xl text-sm font-semibold bg-red-100 text-red-700"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                     <div className="flex justify-end">
                         <button
                             type="button"
                             onClick={saveDeliveryBands}
-                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white"
+                            disabled={!deliveryBandsDirty || savingPricing || deliveryBandsLoading}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Save pricing
+                            {savingPricing ? "Saving..." : "Save pricing"}
                         </button>
                     </div>
                 </section>
@@ -594,20 +684,28 @@ export default function ShopSettingsPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-center">
                         <div>
                             <label className="text-xs font-semibold text-gray-500 uppercase">Amount (₹)</label>
-                            <input
-                                type="number"
-                                value={minOrderValue}
-                                onChange={(e) => setMinOrderValue(parseFloat(e.target.value) || 0)}
-                                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm"
-                            />
+                            {minOrderLoading ? (
+                                <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+                            ) : (
+                                <input
+                                    type="number"
+                                    value={minOrderValue}
+                                    onChange={(e) => {
+                                        setMinOrderValue(parseFloat(e.target.value) || 0);
+                                        setMinOrderDirty(true);
+                                    }}
+                                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm"
+                                />
+                            )}
                         </div>
                         <div className="sm:col-span-2 flex justify-end">
                             <button
                                 type="button"
                                 onClick={saveMinOrder}
-                                className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white"
+                                disabled={!minOrderDirty || savingMinOrder || minOrderLoading}
+                                className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Save minimum order
+                                {savingMinOrder ? "Saving..." : "Save minimum order"}
                             </button>
                         </div>
                     </div>
