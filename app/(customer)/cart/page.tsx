@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; // Import useRouter
 import Image from "next/image";
@@ -18,11 +18,40 @@ import type { CartItem } from "@/types/products";
 
 export default function CartPage() {
   const router = useRouter(); // Initialize router
-  const { items, cartTotalAmount, fetchCart } = useCartStore();
+  const { items, fetchCart } = useCartStore();
+  const [selectedItems, setSelectedItems] = useState<Set<string | number>>(new Set());
 
+  console.log("Cart Items:", items);
   useEffect(() => {
     if (items.length <= 0) fetchCart();
   }, [fetchCart, items.length]);
+
+  // Calculate total for selected items
+  const selectedTotal = useMemo(() => {
+    return items
+      .filter((item) => selectedItems.has(item.id))
+      .reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  }, [items, selectedItems]);
+
+  // Toggle item selection
+  const toggleItemSelection = (itemId: string | number) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  // Select/Deselect all
+  const toggleSelectAll = () => {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(items.map((item) => item.id)));
+    }
+  };
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
@@ -46,9 +75,29 @@ export default function CartPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Cart Items List */}
           <div className="flex-1 space-y-4">
+            {/* Select All Checkbox */}
+            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+              <input
+                type="checkbox"
+                checked={selectedItems.size === items.length && items.length > 0}
+                onChange={toggleSelectAll}
+                className="w-5 h-5 rounded cursor-pointer"
+              />
+              <label className="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {selectedItems.size === items.length && items.length > 0
+                  ? "Deselect All"
+                  : "Select All"}
+              </label>
+            </div>
+
             <AnimatePresence mode="popLayout">
               {items.map((item) => (
-                <ItemsList key={item.id} {...item} />
+                <ItemsList
+                  key={item.id}
+                  {...item}
+                  isSelected={selectedItems.has(item.id)}
+                  onToggleSelect={() => toggleItemSelection(item.id)}
+                />
               ))}
             </AnimatePresence>
           </div>
@@ -62,8 +111,8 @@ export default function CartPage() {
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Subtotal</span>
-                  <span>₹{cartTotalAmount.toFixed(2)}</span>
+                  <span>Selected Items ({selectedItems.size})</span>
+                  <span>₹{selectedTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Delivery Fee</span>
@@ -71,17 +120,21 @@ export default function CartPage() {
                 </div>
                 {/* <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Taxes</span>
-                  <span>₹{(cartTotalAmount * 0.05).toFixed(2)}</span>
+                  <span>₹{(selectedTotal * 0.05).toFixed(2)}</span>
                 </div> */}
                 <div className="h-px bg-gray-100 dark:bg-gray-700 my-4" />
                 <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
                   <span>Total</span>
-                  <span>₹{cartTotalAmount.toFixed(2)}</span>
+                  <span>₹{selectedTotal.toFixed(2)}</span>
                 </div>
               </div>
 
-              <Link href="/checkout" className="block w-full">
-                <button className="w-full bg-yellow-500 text-white font-bold py-4 rounded-xl hover:bg-yellow-600 transition-colors shadow-lg shadow-yellow-500/30 flex items-center justify-center gap-2">
+              <Link href={selectedItems.size > 0 ? "/checkout" : "#"} className="block w-full">
+                <button
+                  disabled={selectedItems.size === 0}
+                  className="w-full bg-yellow-500 text-white font-bold py-4 rounded-xl hover:bg-yellow-600 transition-colors shadow-lg shadow-yellow-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={selectedItems.size === 0 ? "Please select at least one product" : ""}
+                >
                   Proceed to Checkout <ArrowRight size={20} />
                 </button>
               </Link>
@@ -127,7 +180,7 @@ export default function CartPage() {
   );
 }
 
-const ItemsList = (item: CartItem) => {
+const ItemsList = (item: CartItem & { isSelected: boolean; onToggleSelect: () => void }) => {
   const { removeFromCart, updateQuantity } = useCartStore();
   return (
     <motion.div
@@ -135,8 +188,21 @@ const ItemsList = (item: CartItem) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-4"
+      className={`rounded-2xl p-4 shadow-sm border flex gap-4 transition-all ${item.isSelected
+          ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700"
+          : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
+        }`}
     >
+      {/* Checkbox */}
+      <div className="flex items-center justify-center">
+        <input
+          type="checkbox"
+          checked={item.isSelected}
+          onChange={item.onToggleSelect}
+          className="w-5 h-5 rounded cursor-pointer"
+        />
+      </div>
+
       {/* Product Image */}
       <div className="relative w-24 h-24 md:w-32 md:h-32 shrink-0 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
         {item.product.image ? (
@@ -193,7 +259,7 @@ const ItemsList = (item: CartItem) => {
             </button>
           </div>
 
-          <span className="text-lg font-bold text-gray-900 dark:text-white">
+          <span className={`text-lg font-bold ${item.isSelected ? "text-yellow-600 dark:text-yellow-400" : "text-gray-900 dark:text-white"}`}>
             ₹{(item.product.price * item.quantity).toFixed(2)}
           </span>
         </div>

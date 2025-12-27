@@ -98,6 +98,14 @@ export default function ProductPage() {
     return { distanceKm, matchedRate };
   }, [product?.shop, shopLocation, userLocation]);
 
+  // Disable checkout if location check fails
+  const canCheckout = useMemo(() => {
+    if (!shopLocation) return false; // Shop has no location
+    if (!userLocation) return false; // User hasn't set location
+    if (deliveryCheck && !deliveryCheck.matchedRate) return false; // Out of range
+    return true;
+  }, [shopLocation, userLocation, deliveryCheck]);
+
   const handleUseGps = () => {
     if (!navigator?.geolocation) {
       alert("Geolocation not supported on this device");
@@ -463,9 +471,11 @@ export default function ProductPage() {
                   </div>
 
                   {!shopLocation ? (
-                    <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                      <AlertCircle size={16} />
-                      <span>Shop location unavailable. Please try again later.</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                        <AlertCircle size={16} />
+                        <span>Shop location unavailable. Checkout disabled.</span>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -507,6 +517,15 @@ export default function ProductPage() {
                         </div>
                       </div>
 
+                      {!userLocation && (
+                        <div className="rounded-xl border border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 p-4 flex items-start gap-3">
+                          <AlertCircle className="text-yellow-600 dark:text-yellow-400" size={20} />
+                          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                            Please set your location to check delivery availability and enable checkout.
+                          </p>
+                        </div>
+                      )}
+
                       {userLocation && (
                         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 flex items-start gap-3">
                           {deliveryCheck?.matchedRate ? (
@@ -521,7 +540,7 @@ export default function ProductPage() {
                                 Available for delivery. Charge: <span className="font-bold">{deliveryCheck.matchedRate.price === 0 ? "Free" : `₹${deliveryCheck.matchedRate.price}`}</span>
                               </p>
                             ) : (
-                              <p>Not available for your location based on current delivery radius.</p>
+                              <p className="text-red-600 dark:text-red-400 font-semibold">Not available for your location. Checkout is disabled.</p>
                             )}
                           </div>
                         </div>
@@ -578,8 +597,9 @@ export default function ProductPage() {
                     {/* Add to Cart Button */}
                     <button
                       onClick={handleAddToCart}
-                      disabled={isCartLoading || isBuying}
-                      className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      disabled={!canCheckout || isCartLoading || isBuying}
+                      className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={!canCheckout ? "Please verify delivery to your location first" : ""}
                     >
                       {isCartLoading ? (
                         <Loader2 size={20} className="animate-spin" />
@@ -594,8 +614,9 @@ export default function ProductPage() {
                     {/* Buy Now Button */}
                     <button
                       onClick={handleBuyNow}
-                      disabled={isBuying || isCartLoading}
-                      className="flex-1 bg-yellow-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-yellow-500/30 hover:bg-yellow-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                      disabled={!canCheckout || isBuying || isCartLoading}
+                      className="flex-1 bg-yellow-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-yellow-500/30 hover:bg-yellow-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                      title={!canCheckout ? "Please verify delivery to your location first" : ""}
                     >
                       {isBuying ? (
                         <Loader2 size={20} className="animate-spin" />

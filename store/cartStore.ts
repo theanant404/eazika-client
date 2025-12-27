@@ -54,6 +54,7 @@ const fetchCartData = async (set: Set) => {
   } finally {
     set({ isLoading: false });
   }
+
 };
 const addToCartData = async (data: AddToCartPayload, get: Get, set: Set) => {
   set({ isLoading: true });
