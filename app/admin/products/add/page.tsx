@@ -46,7 +46,7 @@ interface GlobalProduct {
 //   stock: number;
 // }
 
-export default function AddGlobalProductPage() {
+export default function GlobalProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
@@ -62,6 +62,7 @@ export default function AddGlobalProductPage() {
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [images, setImages] = useState<string[]>([""]);
+  const [isActive, setIsActive] = useState(true);
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -71,6 +72,7 @@ export default function AddGlobalProductPage() {
   const [editDescription, setEditDescription] = useState("");
   const [editCategoryId, setEditCategoryId] = useState<number | "">("");
   const [editImages, setEditImages] = useState<string[]>([]);
+  const [editIsActive, setEditIsActive] = useState(true);
   const [editLoading, setEditLoading] = useState(false);
 
   // Discontinue Modal State
@@ -94,7 +96,7 @@ export default function AddGlobalProductPage() {
   const fetchGlobalProducts = async () => {
     try {
       setIsLoading(true);
-      const response = await shopService.getGlobalProducts(currentPage, 20);
+      const response = await AdminService.getAllGlobalProducts(currentPage, 20);
       console.log("Fetched global products:", response);
       // Align with API shape: some endpoints return `globalProducts`
       setGlobalProducts((response as any).globalProducts || response.products || []);
@@ -161,6 +163,7 @@ export default function AddGlobalProductPage() {
         brand: brand || undefined,
         description: description || undefined,
         images: validImages,
+        isActive,
       };
 
       await AdminService.createGlobalProduct(payload);
@@ -171,6 +174,7 @@ export default function AddGlobalProductPage() {
       setDescription("");
       setCategoryId("");
       setImages([""]);
+      setIsActive(true);
       fetchGlobalProducts();
     } catch (error) {
       console.error("Failed to create product", error);
@@ -187,6 +191,7 @@ export default function AddGlobalProductPage() {
     setEditDescription(product.description || "");
     setEditCategoryId(product.productCategoryId || "");
     setEditImages(product.images || []);
+    setEditIsActive(product.isActive ?? true);
     setIsEditModalOpen(true);
   };
 
@@ -203,10 +208,11 @@ export default function AddGlobalProductPage() {
         brand: editBrand || undefined,
         description: editDescription || undefined,
         images: validImages,
+        isActive: editIsActive,
       };
 
       // You'll need to add this method to AdminService
-      await shopService.updateProductDetails(editingProduct.id, payload);
+      await AdminService.updateProductDetails(editingProduct.id, payload);
       toast.success("Product updated successfully!");
       setIsEditModalOpen(false);
       fetchGlobalProducts();
@@ -229,7 +235,7 @@ export default function AddGlobalProductPage() {
     try {
       // Toggle the product active status
       const newStatus = !productToDiscontinue.isActive;
-      await shopService.toggleProductStatus(productToDiscontinue.id, newStatus);
+      await AdminService.toggleProductStatus(productToDiscontinue.id, newStatus);
       toast.success(newStatus ? "Product continued successfully!" : "Product discontinued successfully!");
       setIsDiscontinueModalOpen(false);
       fetchGlobalProducts();
@@ -330,6 +336,23 @@ export default function AddGlobalProductPage() {
                   className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Detailed description of the product..."
                 />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-700 px-4 py-3 border border-gray-200 dark:border-gray-600">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Toggle to control whether the product is visible to shops.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsActive((prev) => !prev)}
+                  className={`w-14 h-8 rounded-full flex items-center px-1 transition-colors ${isActive ? "bg-green-500" : "bg-gray-400"}`}
+                  aria-pressed={isActive}
+                >
+                  <span
+                    className={`h-6 w-6 rounded-full bg-white shadow transform transition-transform ${isActive ? "translate-x-6" : "translate-x-0"}`}
+                  />
+                </button>
               </div>
             </div>
 
@@ -694,6 +717,23 @@ export default function AddGlobalProductPage() {
                   rows={4}
                   className="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-gray-700 px-4 py-3 border border-gray-200 dark:border-gray-600">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Toggle to control whether the product remains available.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditIsActive((prev) => !prev)}
+                  className={`w-14 h-8 rounded-full flex items-center px-1 transition-colors ${editIsActive ? "bg-green-500" : "bg-gray-400"}`}
+                  aria-pressed={editIsActive}
+                >
+                  <span
+                    className={`h-6 w-6 rounded-full bg-white shadow transform transition-transform ${editIsActive ? "translate-x-6" : "translate-x-0"}`}
+                  />
+                </button>
               </div>
 
               <div className="space-y-2">

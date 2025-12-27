@@ -1,4 +1,5 @@
 import axiosInstance from "@/lib/axios";
+import { GlobalProductListType } from "@/types/shop";
 
 export interface AdminUser {
   id: number;
@@ -11,7 +12,7 @@ export interface AdminUser {
 }
 
 export const AdminService = {
-  
+
   getStats: async () => {
     const response = await axiosInstance.get("/admin/stats");
     return response.data.data;
@@ -22,7 +23,7 @@ export const AdminService = {
     return response.data.data;
   },
 
-  
+
   getAllUsers: async (page = 1, limit = 10) => {
     const response = await axiosInstance.get(`/admin/users/get-all-users`, {
       params: { page, limit },
@@ -30,7 +31,7 @@ export const AdminService = {
     return response.data.data;
   },
 
-  
+
   getAllShops: async (status = "all") => {
     const response = await axiosInstance.get(`/admin/shops/get-all`, {
       params: { status },
@@ -68,7 +69,7 @@ export const AdminService = {
     return response.data.data;
   },
 
-  
+
   getAllCategories: async () => {
     const response = await axiosInstance.get("/admin/products/get-categories");
     return response.data.data.categories;
@@ -89,7 +90,36 @@ export const AdminService = {
     );
     return response.data.data;
   },
-
+  getAllGlobalProducts: async (
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<GlobalProductListType> => {
+    const params = new URLSearchParams();
+    params.append("pagination[currentPage]", String(page));
+    params.append("pagination[itemsPerPage]", String(limit));
+    params.append("currentPage", String(page));
+    params.append("itemsPerPage", String(limit));
+    params.append("page", String(page));
+    params.append("limit", String(limit));
+    const response = await axiosInstance.get(
+      `/admin/products/get-all-global-product?${params.toString()}`
+    );
+    return response.data.data;
+  },
+  updateProductDetails: async (productId: number, data: any) => {
+    const response = await axiosInstance.patch(
+      `/admin/products/update-global-product/${productId}`,
+      data
+    );
+    return response.data.data;
+  },
+  toggleProductStatus: async (productId: number, isActive: boolean) => {
+    const response = await axiosInstance.patch(
+      `/admin/products/toggle-global-product-status/${productId}`,
+      { isActive }
+    );
+    return response.data.data;
+  },
   createGlobalProductsBulk: async (products: any[]) => {
     const response = await axiosInstance.post(
       "/admin/products/add-global-in-bluk",

@@ -227,7 +227,7 @@ export const ShopService = {
   getGlobalCatalog: async (): Promise<ShopProduct[]> => {
     try {
       const response = await axios.get(
-        "/shops/get-all-global-product"
+        "/shops/products/get-all-global-product"
       );
       // Cast explicitly if needed or rely on inference
       const globalData = response.data.data as GlobalProductListType;
@@ -299,7 +299,7 @@ export const ShopService = {
     params.append("page", String(page));
     params.append("limit", String(limit));
     const response = await axios.get(
-      `/shops/get-all-global-product?${params.toString()}`
+      `/shops/products/get-all-global-product?${params.toString()}`
     );
     console.log(response)
     return response.data.data;
