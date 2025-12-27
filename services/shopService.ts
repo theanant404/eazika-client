@@ -199,6 +199,26 @@ export const ShopService = {
     const response = await axios.put("/shops/update-shop-address", data);
     return response.data;
   },
+  updateShopDeliverySlots: async (data: {
+    isOnlineDelivery: boolean;
+    weeklySlots: Array<{
+      day: string;
+      isOpen: boolean;
+      open: string;
+      close: string;
+    }>;
+  }) => {
+    try {
+      const response = await axiosInstance.patch(
+        "/shops/update-delivery-slots",
+        data
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating delivery slots:", error);
+      throw error;
+    }
+  },
   // --- PRODUCT MANAGEMENT ---
 
   getInventory: async () => {
