@@ -325,7 +325,13 @@ export const ShopService = {
     );
     return response.data.data;
   },
-
+  updateProductActivity: async (productId: number, isActive: boolean) => {
+    // console.log("Updating product activity:", productId, isActive);
+    const response = await axiosInstance.patch(
+      `/shops/products/update-product-status`, { productId, isActive }
+    );
+    return response.data;
+  },
   updateProductDetails: async (
     productId: number,
     data: Partial<UpdateProductPayload>

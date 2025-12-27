@@ -66,6 +66,8 @@ export default function ProductsPage() {
   const [selectedGlobalProduct, setSelectedGlobalProduct] = useState<null | (typeof globalProductList)[number]>(null);
   const [inventoryLoadingMore, setInventoryLoadingMore] = useState(false);
   const [globalLoadingMore, setGlobalLoadingMore] = useState(false);
+  const [activityModalProduct, setActivityModalProduct] = useState<null | { id: number; name: string; isActive: boolean }>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
   const inventorySentinelRef = useRef<HTMLDivElement | null>(null);
   const globalSentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -490,6 +492,7 @@ export default function ProductsPage() {
           </thead>
           <tbody className="bg-white m-5 p-6 dark:bg-gray-800 rounded-2xl  md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700">
             {filteredProducts.map((product) => (
+
               <tr key={product.id}>
                 <td className="border-b p-4">
                   <Image
@@ -504,7 +507,7 @@ export default function ProductsPage() {
                 <td className="border-b p-4">{product.category}</td>
                 <td className="border-b p-4">{product.brand}</td>
                 <td className="border-b p-4">{product.rating || "N/A"}</td>
-                <td className="border-b p-4">{product.isActive}</td>
+                <td className="border-b p-4 "><span className="">{product.isActive ? "Yes" : "No"}</span></td>
                 <td className="border-b p-4">
                   {product.isGlobalProduct ? "Yes" : "No"}
                 </td>
@@ -630,10 +633,28 @@ export default function ProductsPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => openEditModal(product.id)}
-                      className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition"
+                      onClick={() =>
+                        setActivityModalProduct({
+                          id: Number(product.id),
+                          name: product.name,
+                          isActive: Boolean(product.isActive),
+                        })
+                      }
+                      className={`inline-flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-full shadow-sm transition border ${product.isActive
+                        ? "bg-green-100 text-green-800 border-green-200"
+                        : "bg-red-100 text-red-800 border-red-200"
+                        }`}
                     >
-                      <Ban />
+                      <span>{product.isActive ? "Active" : "Inactive"}</span>
+                      <span
+                        className={`ml-3 inline-flex h-5 w-10 items-center rounded-full p-0.5 transition ${product.isActive ? "bg-green-500" : "bg-red-500"
+                          }`}
+                      >
+                        <span
+                          className={`h-4 w-4 rounded-full bg-white shadow transform transition ${product.isActive ? "translate-x-5" : "translate-x-0"
+                            }`}
+                        />
+                      </span>
                     </button>
                   </div>
                 </td>
@@ -889,6 +910,68 @@ export default function ProductsPage() {
                 setAddModalOpen(false);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {activityModalProduct && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 md:p-6">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <button
+              type="button"
+              onClick={() => setActivityModalProduct(null)}
+              className="absolute right-3 top-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+            >
+              <X size={18} />
+            </button>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {activityModalProduct.isActive ? "Deactivate product?" : "Activate product?"}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {activityModalProduct.isActive
+                  ? "This will hide the product from customers until you activate it again."
+                  : "This will make the product available to customers."}
+              </p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{activityModalProduct.name}</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={activityLoading}
+                onClick={async () => {
+                  if (!activityModalProduct) return;
+                  try {
+                    setActivityLoading(true);
+                    await shopService.updateProductActivity(
+                      activityModalProduct.id,
+                      !activityModalProduct.isActive
+                    );
+                    await fetchProducts();
+                    toast.success(
+                      activityModalProduct.isActive ? "Product deactivated" : "Product activated"
+                    );
+                  } catch (error) {
+                    console.error("Failed to update product activity", error);
+                    toast.error("Could not update product availability");
+                  } finally {
+                    setActivityLoading(false);
+                    setActivityModalProduct(null);
+                  }
+                }}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition disabled:opacity-70"
+              >
+                {activityLoading ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                {activityModalProduct.isActive ? "Deactivate" : "Activate"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivityModalProduct(null)}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm hover:opacity-90 transition"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
