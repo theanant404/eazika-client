@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 // import Link from "next/link";
@@ -16,6 +16,10 @@ import {
   ShieldCheck,
   Loader2,
   CreditCard, // Added CreditCard icon for Buy Now
+  MapPin,
+  Crosshair,
+  AlertCircle,
+  CheckCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 // import { ShopService, ShopProduct } from "@/services/shopService";
@@ -43,10 +47,83 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
 
+  // Location check state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
+
   // Variant State
   const [selectedPrice, setSelectedPrice] = useState<ProductPriceType | null>(
     null
   );
+
+  const parseGeo = (geo?: string | null): { lat: number; lng: number } | null => {
+    if (!geo) return null;
+    const parts = geo.split(",").map((p) => parseFloat(p.trim()));
+    if (parts.length !== 2 || parts.some((n) => Number.isNaN(n))) return null;
+    return { lat: parts[0], lng: parts[1] };
+  };
+
+  const shopLocation = useMemo(() => {
+    if (product?.shop?.geoLocation) return parseGeo(product.shop.geoLocation);
+    const lat = product?.shop?.address?.latitude;
+    const lng = product?.shop?.address?.longitude;
+    if (lat && lng) {
+      const latNum = parseFloat(lat);
+      const lngNum = parseFloat(lng);
+      if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) return { lat: latNum, lng: lngNum };
+    }
+    return null;
+  }, [product?.shop?.geoLocation, product?.shop?.address?.latitude, product?.shop?.address?.longitude]);
+
+  const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const R = 6371; // Earth radius km
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
+
+  const deliveryCheck = useMemo(() => {
+    if (!product?.shop || !shopLocation || !userLocation || !product.shop.deliveryRates?.length) return null;
+    const distanceKm = haversineKm(shopLocation, userLocation);
+    const sortedRates = [...product.shop.deliveryRates].sort((a, b) => a.km - b.km);
+    const matchedRate = sortedRates.find((r) => distanceKm <= r.km) || null;
+    return { distanceKm, matchedRate };
+  }, [product?.shop, shopLocation, userLocation]);
+
+  const handleUseGps = () => {
+    if (!navigator?.geolocation) {
+      alert("Geolocation not supported on this device");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setManualLat(pos.coords.latitude.toFixed(6));
+        setManualLng(pos.coords.longitude.toFixed(6));
+        setIsLocating(false);
+      },
+      () => {
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
+  const handleUseManual = () => {
+    const lat = parseFloat(manualLat);
+    const lng = parseFloat(manualLng);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+    setUserLocation({ lat, lng });
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -162,8 +239,8 @@ export default function ProductPage() {
                         key={idx}
                         onClick={() => setActiveImage(idx)}
                         className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${activeImage === idx
-                            ? "border-yellow-500"
-                            : "border-transparent"
+                          ? "border-yellow-500"
+                          : "border-transparent"
                           }`}
                       >
                         <Image
@@ -275,8 +352,8 @@ export default function ProductPage() {
                         key={price.id}
                         onClick={() => setSelectedPrice(price)}
                         className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border-2 ${selectedPrice?.id === price.id
-                            ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
-                            : "border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
+                          : "border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
                           }`}
                       >
                         {`${price.weight}${price.unit} - ₹${price.price}`}
@@ -298,9 +375,7 @@ export default function ProductPage() {
                 {/* Shop Information */}
                 {product.shop && (
                   <div className="border-2 border-gray-100 dark:border-gray-700 rounded-2xl p-5 bg-linear-to-br from-yellow-50 to-orange-50 dark:from-gray-800 dark:to-gray-800/50">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
-                      Sold by
-                    </h3>
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Sold by</h3>
                     <div className="flex items-start gap-4">
                       {/* Shop Image */}
                       <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white dark:bg-gray-700 border-2 border-white dark:border-gray-600 shadow-md">
@@ -312,20 +387,24 @@ export default function ProductPage() {
                             objectFit="cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            Shop
-                          </div>
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">Shop</div>
                         )}
                       </div>
 
                       {/* Shop Details */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-1 truncate">
-                          {product.shop.name}
-                        </h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize mb-3">
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <h4 className="font-bold text-lg text-gray-900 dark:text-white truncate">{product.shop.name}</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                           {product.shop.category}
                         </p>
+                        {product.shop.address?.fullAddress && (
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            {product.shop.address.fullAddress}
+                            {product.shop.address.city ? `, ${product.shop.address.city}` : ""}
+                            {product.shop.address.state ? `, ${product.shop.address.state}` : ""}
+                            {product.shop.address.pincode ? ` - ${product.shop.address.pincode}` : ""}
+                          </p>
+                        )}
 
                         {/* Delivery Info */}
                         <div className="space-y-2">
@@ -335,10 +414,7 @@ export default function ProductPage() {
                               <ShoppingCart size={14} className="text-green-600 dark:text-green-400" />
                             </div>
                             <span className="text-gray-700 dark:text-gray-300">
-                              Min. Order:{" "}
-                              <span className="font-bold text-gray-900 dark:text-white">
-                                ₹{product.shop.minimumOrderValue}
-                              </span>
+                              Min. Order: <span className="font-bold text-gray-900 dark:text-white">₹{product.shop.minimumOrderValue}</span>
                             </span>
                           </div>
 
@@ -349,9 +425,7 @@ export default function ProductPage() {
                                 <Truck size={14} className="text-blue-600 dark:text-blue-400" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-gray-700 dark:text-gray-300 mb-1">
-                                  Delivery Charges:
-                                </p>
+                                <p className="text-gray-700 dark:text-gray-300 mb-1">Delivery Charges:</p>
                                 <div className="flex flex-wrap gap-2">
                                   {product.shop.deliveryRates.slice(0, 3).map((rate, idx) => (
                                     <span
@@ -372,9 +446,7 @@ export default function ProductPage() {
                               <div className="w-7 h-7 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
                                 <ShieldCheck size={14} className="text-yellow-600 dark:text-yellow-400" />
                               </div>
-                              <span className="text-green-600 dark:text-green-400 font-semibold">
-                                Online Delivery Available
-                              </span>
+                              <span className="text-green-600 dark:text-green-400 font-semibold">Online Delivery Available</span>
                             </div>
                           )}
                         </div>
@@ -382,6 +454,81 @@ export default function ProductPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Delivery availability check */}
+                <div className="border-2 border-gray-100 dark:border-gray-700 rounded-2xl p-5 bg-white dark:bg-gray-800/60">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin size={18} className="text-gray-600 dark:text-gray-300" />
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Check delivery to your location</h3>
+                  </div>
+
+                  {!shopLocation ? (
+                    <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                      <AlertCircle size={16} />
+                      <span>Shop location unavailable. Please try again later.</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Shop location: <span className="font-semibold text-gray-900 dark:text-white">{shopLocation.lat.toFixed(6)}, {shopLocation.lng.toFixed(6)}</span>
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button
+                          type="button"
+                          onClick={handleUseGps}
+                          disabled={isLocating}
+                          className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-semibold shadow-sm disabled:opacity-60"
+                        >
+                          <Crosshair size={16} />
+                          {isLocating ? "Detecting..." : "Use GPS"}
+                        </button>
+
+                        <input
+                          placeholder="Latitude"
+                          value={manualLat}
+                          onChange={(e) => setManualLat(e.target.value)}
+                          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <input
+                            placeholder="Longitude"
+                            value={manualLng}
+                            onChange={(e) => setManualLng(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleUseManual}
+                            className="shrink-0 px-3 py-2 rounded-xl bg-yellow-500 text-white font-semibold"
+                          >
+                            Set
+                          </button>
+                        </div>
+                      </div>
+
+                      {userLocation && (
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 flex items-start gap-3">
+                          {deliveryCheck?.matchedRate ? (
+                            <CheckCircle className="text-green-600" size={20} />
+                          ) : (
+                            <AlertCircle className="text-red-600" size={20} />
+                          )}
+                          <div className="text-sm text-gray-700 dark:text-gray-200">
+                            <p className="font-semibold mb-1">Distance: {deliveryCheck ? deliveryCheck.distanceKm.toFixed(2) : "--"} km</p>
+                            {deliveryCheck?.matchedRate ? (
+                              <p>
+                                Available for delivery. Charge: <span className="font-bold">{deliveryCheck.matchedRate.price === 0 ? "Free" : `₹${deliveryCheck.matchedRate.price}`}</span>
+                              </p>
+                            ) : (
+                              <p>Not available for your location based on current delivery radius.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Trust Badges */}
                 <div className="grid grid-cols-2 gap-4">

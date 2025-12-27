@@ -58,6 +58,7 @@ interface ProductDetailType {
     name: string;
     category: string;
     image: string[];
+    geoLocation?: string;
     minimumOrderValue: number;
     deliveryRates: {
       km: number;
@@ -71,6 +72,14 @@ interface ProductDetailType {
         close: string;
         isOpen: boolean;
       }[];
+    };
+    address?: {
+      latitude?: string;
+      longitude?: string;
+      fullAddress?: string;
+      city?: string;
+      state?: string;
+      pincode?: string;
     };
   };
 }
