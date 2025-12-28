@@ -32,12 +32,13 @@ const OrderCard = ({ order }: { order: Order }) => {
   const isLive = !['delivered', 'cancelled'].includes(order.status);
   // console.log(isLive)
   const handleCardClick = () => {
-    // Live orders go to tracking page, completed to details page
-    if (isLive) {
-      router.push(`/orders/track-order/${order.id}`);
-    } else {
-      router.push(`/orders/${order.id}`);
-    }
+    // Force all orders to open the tracking page (avoids missing /orders/[id] route)
+    const target = `/orders/track-order/${order.id}`;
+    router.push(target);
+    // Fallback hard redirect to avoid any client-side bounce back
+    setTimeout(() => {
+      window.location.href = target;
+    }, 50);
   };
 
   const statusInfo = getStatusInfo(order.status);
