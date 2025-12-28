@@ -137,7 +137,7 @@ export default function HomePage() {
   }, [searchQuery, products]);
 
   const visibleProducts = useMemo(() => {
-    console.log("Calculating visible products:", { productsLength: products?.length, visibleProductCount });
+    // console.log("Calculating visible products:", { productsLength: products?.length, visibleProductCount });
     return products?.slice(0, visibleProductCount);
   }, [products, visibleProductCount]);
 
