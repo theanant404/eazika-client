@@ -85,7 +85,7 @@ function LoginContent() {
 
                 await setAuthCookies(token, role);
                 localStorage.setItem("accessToken", token);
-                console.log("Logged in user:", user, "with role:", role);
+                // console.log("Logged in user:", user, "with role:", role);
                 if (redirectPath) {
                     router.push(redirectPath);
                 } else if (role === "admin") router.push("/admin");
