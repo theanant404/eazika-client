@@ -1,9 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Phone, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { ChevronLeft, Phone, Lock, ArrowRight, Loader2, RefreshCcw } from "lucide-react";
 import { userService } from "@/services/userService";
 import { toast } from "sonner";
 
@@ -18,7 +18,6 @@ function LoginContent() {
     const [requestId, setRequestId] = useState("");
     const [loading, setLoading] = useState(false);
     const [timer, setTimer] = useState(30);
-
     useEffect(() => {
         router.refresh();
         let interval: NodeJS.Timeout;
@@ -44,6 +43,18 @@ function LoginContent() {
 
         setLoading(true);
         try {
+            // Clear old app data for a clean login experience
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                if (typeof caches !== "undefined" && caches.keys) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map((key) => caches.delete(key)));
+                }
+            } catch (cleanupError) {
+                console.warn("Cleanup before OTP send failed", cleanupError);
+            }
+
             // Use Service instead of raw fetch
             const data = await userService.loginUser(cleanPhone);
             // console.log("OTP Response Data:", data);
@@ -137,9 +148,10 @@ function LoginContent() {
                     >
                         <ChevronLeft size={16} className="mr-1" /> Back to Home
                     </Link>
+
                     <div onClick={() => {
                         localStorage.clear();
-                        window.location.href = "/login";
+                        window.location.href = redirectPath || "/login";
                     }} className="cursor-pointer inline-flex items-center text-sm text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 mb-4 transition-colors">
                         <ChevronLeft size={16} className="mr-1" />Back
                     </div>
