@@ -27,12 +27,13 @@ export const userService = {
 
   loginUser: async (phone: string) => {
     const response = await axios.post("/users/login", { phone });
-    // console.log("Login Response:", response);
+    console.log("Login Response:", response);
     return response.data;
   },
 
   verifyLogin: async (data: VerifyOtpPayload) => {
     const response = await axios.post("/users/login/verify", data);
+    console.log("Verify Login Response:", response);
     return response.data;
   },
 
