@@ -62,7 +62,15 @@ export async function proxy(req: NextRequest) {
       }
       return NextResponse.next();
     }
-
+    if (pathname === "/") {
+      if (userRole === "shopkeeper") {
+        return NextResponse.redirect(new URL("/shop", req.url));
+      }
+      if (userRole === "delivery_boy") {
+        return NextResponse.redirect(new URL("/rider", req.url));
+      }
+      return NextResponse.next();
+    }
     // CUSTOMER ROUTES - riders and shopkeepers can also access
     const customerRoutes = ["/cart", "/checkout", "/wishlist", "/orders", "/profile", "/"];
     if (customerRoutes.some(route => pathname.startsWith(route))) {
