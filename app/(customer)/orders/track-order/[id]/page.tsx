@@ -59,7 +59,7 @@ const OrderDetailsContent = ({
       alert(`Copied ${tracking.deliveryBoy.phone} to clipboard!`);
     }
   };
-  console.log(tracking);
+  // console.log(tracking);
   return (
     <div className="px-6 pb-6 space-y-6">
       {/* Driver Info */}
@@ -180,7 +180,7 @@ function TrackOrderContent() {
     const loadTracking = async () => {
       try {
         const data = await CartService.trackOrder(Number(orderId));
-        console.log("Track order data fetched", data);
+        // console.log("Track order data fetched", data);
         setTracking(data);
       } catch (error) {
         console.error("Failed to track order", error);
