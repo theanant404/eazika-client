@@ -9,6 +9,7 @@ import { DeliveryService } from "@/services/deliveryService";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { userStore } from "@/store";
 
 interface FormData {
   aadharNumber: string;
@@ -32,6 +33,10 @@ function DeliveryRegistrationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const urlShopId = searchParams.get("shopId");
+
+  const user = userStore((state) => state.user);
+  const isAuthenticated = userStore((state) => state.isAuthenticated);
+  const fetchUser = userStore((state) => state.fetchUser);
 
   const [step, setStep] = useState<"select-shop" | "details">("select-shop");
   const [selectedShopId, setSelectedShopId] = useState<number | null>(
@@ -57,6 +62,20 @@ function DeliveryRegistrationContent() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      fetchUser().catch((err) => console.error("Failed to fetch user", err));
+    }
+  }, [isAuthenticated, fetchUser]);
+
+  useEffect(() => {
+    if (user) {
+      // console.log("Logged-in user details", user);
+    } else {
+      // console.log("No authenticated user found");
+    }
+  }, [user]);
 
   useEffect(() => {
     if (urlShopId) {
@@ -205,7 +224,7 @@ function DeliveryRegistrationContent() {
         errorMessage.toLowerCase().includes("already exists")
       ) {
         // If profile exists, redirect to dashboard as fallback
-        setTimeout(() => router.push("/delivery"), 1500);
+        setTimeout(() => router.push("/rider"), 1500);
       }
     } finally {
       setIsSubmitting(false);
