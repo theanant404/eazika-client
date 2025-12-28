@@ -34,7 +34,8 @@ const STEPS = [
 
 export default function ShopRegistrationContent() {
     const router = useRouter();
-    const { user, fetchUser } = userStore();
+    const user = userStore((state) => state.user);
+    const fetchUser = userStore((state) => state.fetchUser);
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +71,27 @@ export default function ShopRegistrationContent() {
         if (savedData) setFormData(JSON.parse(savedData));
         if (!user) fetchUser();
     }, [fetchUser, user]);
+
+    // When user info arrives, prefill and lock phone
+    useEffect(() => {
+        if (user?.phone) {
+            setFormData((prev) => ({
+                ...prev,
+                address: {
+                    name: prev.address?.name ?? "",
+                    phone: user.phone,
+                    line1: prev.address?.line1 ?? "",
+                    line2: prev.address?.line2 ?? "",
+                    street: prev.address?.street ?? "",
+                    country: prev.address?.country ?? "India",
+                    state: prev.address?.state ?? "",
+                    city: prev.address?.city ?? "",
+                    pinCode: prev.address?.pinCode ?? "",
+                    geoLocation: prev.address?.geoLocation ?? "",
+                },
+            }));
+        }
+    }, [user?.phone]);
 
     const updateForm = (field: string, value: string | string[]) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -210,8 +232,8 @@ export default function ShopRegistrationContent() {
                 <div
                     onClick={() => inputRef.current?.click()}
                     className={`border border-dashed rounded-xl p-2 flex flex-col items-center justify-center cursor-pointer transition-all h-24 relative overflow-hidden group ${displayValue
-                            ? "border-green-500/30 bg-green-50/10"
-                            : "border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/50 hover:border-yellow-500"
+                        ? "border-green-500/30 bg-green-50/10"
+                        : "border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/50 hover:border-yellow-500"
                         }`}
                 >
                     {displayValue ? (
@@ -376,8 +398,8 @@ export default function ShopRegistrationContent() {
                                 </motion.div>
                                 <span
                                     className={`text-[9px] font-bold ${isActive
-                                            ? "text-yellow-600 dark:text-yellow-500"
-                                            : "text-transparent"
+                                        ? "text-yellow-600 dark:text-yellow-500"
+                                        : "text-transparent"
                                         }`}
                                 >
                                     {step.title}
@@ -520,23 +542,19 @@ export default function ShopRegistrationContent() {
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                            Phone <span className="text-red-500">*</span>
+                                            Phone (from login) <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="tel"
                                             required
-                                            value={formData.address?.phone}
-                                            onChange={(e) =>
-                                                updateNestedForm(
-                                                    "address",
-                                                    "phone",
-                                                    e.target.value.replace(/\D/g, "")
-                                                )
-                                            }
-                                            // remove number input arrows for better UI
-                                            className="input-field appearance-none"
+                                            value={formData.address?.phone || ""}
+                                            className="input-field appearance-none bg-gray-100 dark:bg-gray-900 cursor-not-allowed"
                                             placeholder="Phone Number"
+                                            disabled
                                         />
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                            This uses your login mobile number and cannot be edited here.
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
