@@ -89,7 +89,7 @@ export default function ShopOrdersPage() {
       order.id.toString().includes(searchQuery) ||
       order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
+  console.log(orders);
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden pb-20">
       {/* Header */}
@@ -110,11 +110,10 @@ export default function ShopOrdersPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
-                activeTab === tab.id
-                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap shrink-0 ${activeTab === tab.id
+                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
             >
               {tab.label}
             </button>
@@ -154,11 +153,11 @@ export default function ShopOrdersPage() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center font-bold text-gray-500 text-sm">
-                      {order.customerName.charAt(0)}
+                      {order.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                        {order.customerName}
+                        {order.name}
                       </h3>
                       <p className="text-xs text-gray-500">
                         #{order.id} •{" "}

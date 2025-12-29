@@ -73,6 +73,8 @@ export interface ShopOrder {
   id: number;
   customerName: string;
   totalAmount: number;
+  name: string;
+  geoLocation?: string;
   status:
   | "pending"
   | "preparing"
@@ -475,6 +477,7 @@ export const ShopService = {
     const response = await axios.get(
       `/shops/orders/get-current-orders?page=${pageOrStatus}&limit=${limit}`
     );
+    console.log("Fetched shop orders:", response);
     return response.data.data;
   },
 
