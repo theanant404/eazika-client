@@ -137,6 +137,10 @@ export default function DeliveryMapPage() {
     return parseGeo((activeOrder as any)?.address?.geoLocation) || null;
   }, [activeOrder]);
 
+  const firstQueueGeo = useMemo(() => {
+    return parseGeo((queue?.[0] as any)?.address?.geoLocation) || null;
+  }, [queue]);
+
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
@@ -322,7 +326,9 @@ export default function DeliveryMapPage() {
   const handleOpenMapsApp = () => {
     const destination = destinationLocation
       ? `${destinationLocation.lat},${destinationLocation.lng}`
-      : activeOrder?.deliveryAddress || queue[0]?.deliveryAddress || "";
+      : firstQueueGeo
+        ? `${firstQueueGeo.lat},${firstQueueGeo.lng}`
+        : activeOrder?.deliveryAddress || queue[0]?.deliveryAddress || "";
 
     if (!destination) {
       toast.error("No destination available for navigation");
@@ -517,7 +523,12 @@ export default function DeliveryMapPage() {
           <div className="grid grid-cols-5 gap-3">
             <button
               onClick={handleOpenMapsApp}
-              disabled={!destinationLocation && !activeOrder?.deliveryAddress && !queue[0]?.deliveryAddress}
+              disabled={
+                !destinationLocation &&
+                !firstQueueGeo &&
+                !activeOrder?.deliveryAddress &&
+                !queue[0]?.deliveryAddress
+              }
               className="col-span-1 bg-gray-800 border border-gray-700 text-white font-bold rounded-xl flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Open navigation in Google Maps"
             >
