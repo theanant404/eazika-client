@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useDeliveryStore } from "@/hooks/useDeliveryStore";
 import {
   GoogleMap,
   useJsApiLoader,
   DirectionsRenderer,
   Marker,
+  InfoWindow,
 } from "@react-google-maps/api";
 import {
   ArrowLeft,
@@ -101,15 +102,28 @@ const defaultCenter = {
   lng: 79.0882,
 };
 
+const parseGeo = (geo?: string | null): { lat: number; lng: number } | null => {
+  if (!geo || typeof geo !== "string") return null;
+  const parts = geo.split(",");
+  if (parts.length !== 2) return null;
+  const lat = parseFloat(parts[0].trim());
+  const lng = parseFloat(parts[1].trim());
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  return { lat, lng };
+};
+
 export default function DeliveryMapPage() {
   const router = useRouter();
   const { queue, activeOrder, completeCurrentOrder, isSessionActive } =
     useDeliveryStore();
 
+  console.log(activeOrder);
   const [currentLocation, setCurrentLocation] =
     useState<google.maps.LatLngLiteral | null>(null);
   const [directionsResponse, setDirectionsResponse] =
     useState<google.maps.DirectionsResult | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [hoveredMarker, setHoveredMarker] = useState<"rider" | "destination" | null>(null);
 
   // Use a Ref to control the map programmatically (for Auto-Zoom)
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -118,6 +132,10 @@ export default function DeliveryMapPage() {
   const [isArrived, setIsArrived] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const destinationLocation = useMemo(() => {
+    return parseGeo((activeOrder as any)?.address?.geoLocation) || null;
+  }, [activeOrder]);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -157,8 +175,8 @@ export default function DeliveryMapPage() {
       // 2. Sync to Backend every 10 seconds
       intervalId = setInterval(() => {
         navigator.geolocation.getCurrentPosition((pos) => {
-             DeliveryService.updateLocation(pos.coords.latitude, pos.coords.longitude)
-               .catch((err: any) => console.error("Location sync failed", err));
+          DeliveryService.updateLocation(pos.coords.latitude, pos.coords.longitude)
+            .catch((err: any) => console.error("Location sync failed", err));
         });
       }, 10000);
 
@@ -168,6 +186,42 @@ export default function DeliveryMapPage() {
       };
     }
   }, []);
+
+  const handleLocate = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported on this device");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const location = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
+        setCurrentLocation(location);
+        if (mapRef.current) {
+          mapRef.current.panTo(location);
+          mapRef.current.setZoom(15);
+        }
+        toast.success("Location locked");
+        setIsLocating(false);
+      },
+      (err) => {
+        console.error("Locate error", err);
+        toast.error("Unable to get location. Please allow location access.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  // Get initial fix if missing
+  useEffect(() => {
+    if (!currentLocation) {
+      handleLocate();
+    }
+  }, [currentLocation, handleLocate]);
 
   // --- 2. AUTO-ZOOM LOGIC (The "Smart" Camera) ---
   useEffect(() => {
@@ -286,7 +340,7 @@ export default function DeliveryMapPage() {
     <div className="h-full w-full relative bg-gray-900">
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={currentLocation || defaultCenter}
+        center={currentLocation || destinationLocation || defaultCenter}
         zoom={15}
         onLoad={(map) => {
           mapRef.current = map;
@@ -307,7 +361,39 @@ export default function DeliveryMapPage() {
               scaledSize: new window.google.maps.Size(50, 50),
               anchor: new window.google.maps.Point(25, 25),
             }}
+            onMouseOver={() => setHoveredMarker("rider")}
+            onMouseOut={() => setHoveredMarker((prev) => (prev === "rider" ? null : prev))}
           />
+        )}
+
+        {hoveredMarker === "rider" && currentLocation && (
+          <InfoWindow position={currentLocation} options={{ pixelOffset: new window.google.maps.Size(0, -40) }}>
+            <div className="text-xs font-semibold text-gray-800">
+              Rider (You)
+            </div>
+          </InfoWindow>
+        )}
+
+        {/* DESTINATION MARKER (Customer) */}
+        {destinationLocation && (
+          <Marker
+            position={destinationLocation}
+            icon={{
+              url: "https://cdn-icons-png.flaticon.com/512/535/535137.png", // pin icon
+              scaledSize: new window.google.maps.Size(44, 44),
+              anchor: new window.google.maps.Point(22, 44),
+            }}
+            onMouseOver={() => setHoveredMarker("destination")}
+            onMouseOut={() => setHoveredMarker((prev) => (prev === "destination" ? null : prev))}
+          />
+        )}
+
+        {hoveredMarker === "destination" && destinationLocation && (
+          <InfoWindow position={destinationLocation} options={{ pixelOffset: new window.google.maps.Size(0, -40) }}>
+            <div className="text-xs font-semibold text-gray-800">
+              Delivery Destination
+            </div>
+          </InfoWindow>
         )}
 
         {/* CUSTOMER MARKER (House/Pin) - We infer this from the route end location if available, or rely on DirectionsRenderer default */}
@@ -340,9 +426,22 @@ export default function DeliveryMapPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <div className="bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full text-white font-bold text-sm shadow-lg flex items-center gap-2 border border-gray-700">
-            <Navigation size={14} className="text-green-500" />
-            {queue.length} Stops
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLocate}
+              className="bg-gray-900/90 backdrop-blur-md p-3 rounded-full text-white shadow-lg border border-gray-700 active:scale-95 transition-transform"
+              aria-label="Locate me"
+            >
+              {isLocating ? (
+                <span className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full inline-block animate-spin" />
+              ) : (
+                <Navigation size={18} className="text-green-400" />
+              )}
+            </button>
+            <div className="bg-gray-900/90 backdrop-blur-md px-4 py-2 rounded-full text-white font-bold text-sm shadow-lg flex items-center gap-2 border border-gray-700">
+              <Navigation size={14} className="text-green-500" />
+              {queue.length} Stops
+            </div>
           </div>
         </div>
       </div>
