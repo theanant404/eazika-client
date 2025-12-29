@@ -193,8 +193,8 @@ const AddressForm = ({
                 type="button"
                 onClick={() => setFormData({ ...formData, name: type })}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${formData.name === type
-                    ? "bg-yellow-50 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-500 dark:text-yellow-400"
-                    : "bg-gray-50 border-transparent text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  ? "bg-yellow-50 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-500 dark:text-yellow-400"
+                  : "bg-gray-50 border-transparent text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                   }`}
               >
                 {type}

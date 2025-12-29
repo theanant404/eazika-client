@@ -117,6 +117,7 @@ export default function ShopOrderDetailsPage({
       setIsUpdating(false);
     }
   };
+  console.log(order)
 
   return (
     <div className="max-w-4xl mx-auto pb-24 md:pb-8">
@@ -310,19 +311,18 @@ export default function ShopOrderDetailsPage({
                     step == "preparing"
                       ? "confirmed"
                       : step && step == "ready"
-                      ? "shipped"
-                      : step
+                        ? "shipped"
+                        : step
                   );
                   const isCompleted = currentIdx >= stepIdx;
 
                   return (
                     <div key={step} className="relative">
                       <div
-                        className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ring-4 ring-white dark:ring-gray-800 ${
-                          isCompleted
+                        className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ring-4 ring-white dark:ring-gray-800 ${isCompleted
                             ? "bg-green-500"
                             : "bg-gray-300 dark:bg-gray-600"
-                        }`}
+                          }`}
                       />
                       <p
                         className={cn(
@@ -435,11 +435,10 @@ export default function ShopOrderDetailsPage({
                       <div
                         key={rider.id}
                         onClick={() => setSelectedRider(rider)}
-                        className={`p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                          selectedRider?.id === rider.id
+                        className={`p-4 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${selectedRider?.id === rider.id
                             ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-500/10"
                             : "border-gray-100 dark:border-gray-700 hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">

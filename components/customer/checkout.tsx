@@ -1,6 +1,7 @@
 "use client";
 import { isAxiosError } from "@/lib/axios";
 import React, { useState } from "react";
+import { AnimatePresence } from "framer-motion";
 
 import { Loader2, Crosshair } from "lucide-react";
 import { userStore } from "@/store";
@@ -17,6 +18,8 @@ const AddressList = ({
 }) => {
   const { addresses } = userStore();
 
+  const eligible = addresses.filter((addr) => Boolean(addr.geoLocation));
+
   if (addresses.length === 0) {
     return (
       <div className="text-center py-6 text-gray-500">
@@ -24,22 +27,29 @@ const AddressList = ({
       </div>
     );
   }
-  return addresses.map((addr) => (
+
+  if (eligible.length === 0) {
+    return (
+      <div className="text-center py-6 text-gray-500">
+        No addresses are eligible for delivery (missing geo location). Please add or update an address with live location.
+      </div>
+    );
+  }
+
+  return eligible.map((addr) => (
     <div
       key={addr.id}
       onClick={() => setSelectedAddressId(Number(addr.id))}
-      className={`p-4 mt-1 md:mt-2 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
-        selectedAddressId === addr.id
+      className={`p-4 mt-1 md:mt-2 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${selectedAddressId === addr.id
           ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-500/10"
           : "border-gray-100 dark:border-gray-700 hover:border-gray-300"
-      }`}
+        }`}
     >
       <div
-        className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-          selectedAddressId === addr.id
+        className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedAddressId === addr.id
             ? "border-yellow-500"
             : "border-gray-300"
-        }`}
+          }`}
       >
         {selectedAddressId === addr.id && (
           <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full" />
@@ -70,6 +80,10 @@ const AddAddressFrom = ({
 }) => {
   const { user, addNewAddress } = userStore();
   const [isLoading, setIsLoading] = useState(false);
+
+  const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [liveTracking, setLiveTracking] = useState(false);
+  const [showGeoPrompt, setShowGeoPrompt] = useState(false);
 
   const [newAddress, setNewAddress] = useState<NewAddressPayload>({
     name: user?.name || "",
@@ -114,6 +128,11 @@ const AddAddressFrom = ({
           pinCode: data.address.postcode || "",
           geoLocation: `${latitude},${longitude}`,
         }));
+
+        const coords = { lat: latitude, lng: longitude };
+        setGeoCoords(coords);
+        setLiveTracking(true);
+        localStorage.setItem("eazika-geo", `${coords.lat},${coords.lng}`);
       } catch (error) {
         console.error("Failed to get address details", error);
         toast.error(
@@ -125,10 +144,20 @@ const AddAddressFrom = ({
     });
   };
 
-  const handleAddNewAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitAddress = async (forceWithoutGeo = false) => {
+    if (!forceWithoutGeo && !geoCoords && !newAddress.geoLocation) {
+      setShowGeoPrompt(true);
+      return;
+    }
+
     try {
-      const add = await addNewAddress(newAddress);
+      const payload = {
+        ...newAddress,
+        geoLocation:
+          newAddress.geoLocation || (geoCoords ? `${geoCoords.lat},${geoCoords.lng}` : ""),
+      };
+
+      const add = await addNewAddress(payload);
       setIsShowingAddAddress(true);
       setSelectedAddressId(Number(add.id));
       toast.success("Address added successfully!");
@@ -139,6 +168,11 @@ const AddAddressFrom = ({
         toast.error(error.message);
       }
     }
+  };
+
+  const handleAddNewAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitAddress();
   };
 
   return (
@@ -160,6 +194,15 @@ const AddAddressFrom = ({
         )}
         Use My Current Location
       </button>
+
+      <div className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full ${liveTracking ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}
+        >
+          {liveTracking ? "Live tracking: ON" : "Live tracking: OFF"}
+        </span>
+        {!liveTracking && <span>Tap "Use My Current Location" to enable</span>}
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <input
@@ -259,6 +302,55 @@ const AddAddressFrom = ({
           Save Address
         </button>
       </div>
+
+      <AnimatePresence>
+        {showGeoPrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl w-full max-w-md border border-gray-100 dark:border-gray-700">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Why share your location?</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">We need it to validate delivery range and enable live tracking.</p>
+                </div>
+                <button
+                  onClick={() => setShowGeoPrompt(false)}
+                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+                <p>• Confirms your address is inside the shop delivery radius.</p>
+                <p>• Enables live order tracking.</p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGeoPrompt(false);
+                    handleUseCurrentLocation();
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-yellow-500 text-white font-bold hover:bg-yellow-600"
+                >
+                  Send geo location & continue
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGeoPrompt(false);
+                    submitAddress(true);
+                  }}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100 font-semibold hover:border-yellow-400"
+                >
+                  Save without geo
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
       {/* Tailwind Custom Styles for Inputs */}
       <style jsx>{`
         .input-field {
