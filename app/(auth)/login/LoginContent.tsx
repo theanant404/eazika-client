@@ -10,7 +10,7 @@ import { toast } from "sonner";
 function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const redirectPath = searchParams.get("redirect");
+    const redirectPath = searchParams?.get("redirect");
 
     const [step, setStep] = useState<1 | 2>(1);
     const [phone, setPhone] = useState("");
