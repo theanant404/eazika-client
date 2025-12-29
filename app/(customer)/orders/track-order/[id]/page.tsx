@@ -167,7 +167,7 @@ const OrderDetailsContent = ({
             <span className="text-xs font-semibold text-gray-400">{orderItems.length} item{orderItems.length > 1 ? 's' : ''}</span>
           </div>
           <div className="space-y-3">
-            {orderItems.map((item) => {
+            {orderItems.map((item: { id: string | number; quantity?: number; productDetails?: { name?: string; image?: string; price?: number } }) => {
               const p = item.productDetails || {};
               const price = p.price != null ? p.price : undefined;
               return (
