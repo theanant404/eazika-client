@@ -14,6 +14,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useCartStore } from "@/store";
+import { useLocationStore } from "@/store/locationStore";
 import type { CartItem } from "@/types/products";
 
 type ShopInfo = {
@@ -50,15 +51,45 @@ const earthDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number)
 export default function CartPage() {
   const router = useRouter(); // Initialize router
   const { items, fetchCart } = useCartStore();
+  const { geoLocation, setGeoLocation } = useLocationStore();
   const [selectedItems, setSelectedItems] = useState<Set<string | number>>(new Set());
   const [latitudeInput, setLatitudeInput] = useState("");
   const [longitudeInput, setLongitudeInput] = useState("");
   const [locationError, setLocationError] = useState<string>("");
   const [isLocating, setIsLocating] = useState(false);
+  const [hasAutoRequested, setHasAutoRequested] = useState(false);
 
   useEffect(() => {
     if (items.length <= 0) fetchCart();
   }, [fetchCart, items.length]);
+
+  // Load stored geo location; if missing, request once and persist
+  useEffect(() => {
+    if (geoLocation && (!latitudeInput || !longitudeInput)) {
+      setLatitudeInput(geoLocation.lat.toFixed(6));
+      setLongitudeInput(geoLocation.lng.toFixed(6));
+      return;
+    }
+
+    if (!geoLocation && !hasAutoRequested && typeof window !== "undefined" && navigator.geolocation) {
+      setHasAutoRequested(true);
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setGeoLocation(coords);
+          setLatitudeInput(coords.lat.toFixed(6));
+          setLongitudeInput(coords.lng.toFixed(6));
+          setLocationError("");
+          setIsLocating(false);
+        },
+        () => {
+          setIsLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+  }, [geoLocation, latitudeInput, longitudeInput, hasAutoRequested, setGeoLocation]);
 
   const userCoordinates = useMemo(() => {
     const lat = parseFloat(latitudeInput);
@@ -275,8 +306,10 @@ export default function CartPage() {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLatitudeInput(pos.coords.latitude.toFixed(6));
-        setLongitudeInput(pos.coords.longitude.toFixed(6));
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setGeoLocation(coords);
+        setLatitudeInput(coords.lat.toFixed(6));
+        setLongitudeInput(coords.lng.toFixed(6));
         setLocationError("");
         setIsLocating(false);
       },
