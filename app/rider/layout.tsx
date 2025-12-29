@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, List, User, Bike, Power, History } from "lucide-react";
 import { useDeliveryStore } from "@/hooks/useDeliveryStore";
+import LogoutButton from "@/components/LogoutButton";
 
 export default function DeliveryLayout({
   children,
@@ -46,11 +47,10 @@ export default function DeliveryLayout({
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-gray-800 text-white shadow-sm"
-                    : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all ${isActive
+                  ? "bg-gray-800 text-white shadow-sm"
+                  : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200"
+                  }`}
               >
                 <Icon
                   size={20}
@@ -62,18 +62,18 @@ export default function DeliveryLayout({
           })}
         </nav>
         {/* Desktop Toggle */}
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-4 border-t border-gray-800 flex flex-col gap-3">
           <button
             onClick={toggleOnline}
-            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold transition-all ${
-              isOnline
-                ? "bg-green-500 text-gray-900 hover:bg-green-400"
-                : "bg-red-500 text-white hover:bg-red-400"
-            }`}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold transition-all ${isOnline
+              ? "bg-green-500 text-gray-900 hover:bg-green-400"
+              : "bg-red-500 text-white hover:bg-red-400"
+              }`}
           >
             <Power size={18} />
             {isOnline ? "You are Online" : "You are Offline"}
           </button>
+          <LogoutButton />
         </div>
       </aside>
 
@@ -91,19 +91,18 @@ export default function DeliveryLayout({
           </div>
           <button
             onClick={toggleOnline}
-            className={`px-3 py-1.5 rounded-full border flex items-center gap-1.5 transition-all ${
-              isOnline
-                ? "bg-green-500/10 border-green-500 text-green-500"
-                : "bg-red-500/10 border-red-500 text-red-500"
-            }`}
+            className={`px-3 py-1.5 rounded-full border flex items-center gap-1.5 transition-all ${isOnline
+              ? "bg-green-500/10 border-green-500 text-green-500"
+              : "bg-red-500/10 border-red-500 text-red-500"
+              }`}
           >
             <div
-              className={`w-2 h-2 rounded-full ${
-                isOnline ? "bg-green-500" : "bg-red-500"
-              }`}
+              className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"
+                }`}
             />
             <span className="text-xs font-bold">{isOnline ? "ON" : "OFF"}</span>
           </button>
+          <LogoutButton />
         </header>
 
         <main className="flex-1 overflow-y-auto bg-gray-900 pb-20 md:pb-0 relative">
@@ -120,9 +119,8 @@ export default function DeliveryLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-                    isActive ? "text-green-500" : "text-gray-500"
-                  }`}
+                  className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? "text-green-500" : "text-gray-500"
+                    }`}
                 >
                   <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                   <span className="text-[10px] font-medium">{item.name}</span>
