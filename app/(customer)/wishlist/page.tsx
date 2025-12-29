@@ -16,14 +16,32 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useWishlistStore } from "@/hooks/useWishlistStore";
 import { useCartStore } from "@/store";
-import { ShopService, ShopProduct } from "@/services/shopService";
+import { ShopService } from "@/services/shopService";
+
+type WishlistProduct = {
+  id: number;
+  name: string;
+  description?: string;
+  images: string[];
+  prices?: Array<{
+    id?: number;
+    price?: number;
+    discount?: number;
+    weight?: number;
+    unit?: string;
+  }>;
+  price?: number;
+  rating?: number | { rate?: number; count?: number };
+  isGlobalProduct?: boolean;
+  brand?: string;
+};
 
 export default function WishlistPage() {
   const router = useRouter();
   const { wishlistIds, toggleWishlist } = useWishlistStore();
   const { addToCart, isLoading: isCartLoading } = useCartStore();
 
-  const [wishlistProducts, setWishlistProducts] = useState<ShopProduct[]>([]);
+  const [wishlistProducts, setWishlistProducts] = useState<WishlistProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
 
@@ -39,29 +57,39 @@ export default function WishlistPage() {
       return;
     }
 
+    const normalizeProduct = (entry: any): WishlistProduct | null => {
+      const product = entry?.product || entry?.data || entry;
+      if (!product) return null;
+
+      const primaryPrice = Array.isArray(product.prices) && product.prices.length > 0
+        ? product.prices[0]
+        : undefined;
+
+      return {
+        ...product,
+        price: typeof product.price === "number" ? product.price : primaryPrice?.price,
+        images: Array.isArray(product.images) ? product.images : [],
+        prices: Array.isArray(product.prices) ? product.prices : undefined,
+      } as WishlistProduct;
+    };
+
     const fetchWishlistItems = async () => {
       setIsLoading(true);
       try {
-        // 1. Create a Set of input IDs to remove exact string duplicates
         const uniqueInputIds = Array.from(new Set(wishlistIds));
 
-        // 2. Fetch all products in parallel
         const promises = uniqueInputIds.map((id) =>
-          ShopService.getProductById(
-            Number(id.toString().replace(/\D/g, ""))
-          ).catch(() => null)
+          ShopService.getProductById(Number(id.toString().replace(/\D/g, ""))).catch(() => null)
         );
 
         const results = await Promise.all(promises);
 
-        // 3. Filter nulls, placeholders, AND Deduplicate
-        // Filter out products that failed to load or are placeholders ("Product Not Found")
-        const validProducts = results.filter((p): p is ShopProduct => {
-          return p !== null && p.name !== "Product Not Found";
-        });
+        const normalizedProducts = results
+          .map(normalizeProduct)
+          .filter((p): p is WishlistProduct => p !== null && p.name !== "Product Not Found");
 
-        const uniqueProductsMap = new Map();
-        validProducts.forEach((p) => uniqueProductsMap.set(p.id, p));
+        const uniqueProductsMap = new Map<number, WishlistProduct>();
+        normalizedProducts.forEach((p) => uniqueProductsMap.set(p.id, p));
 
         setWishlistProducts(Array.from(uniqueProductsMap.values()));
       } catch (error) {
@@ -75,13 +103,11 @@ export default function WishlistPage() {
       fetchWishlistItems();
     }
   }, [wishlistIds, isClient]);
-  console.log(wishlistProducts);
-  wishlistIds.map((id, name) => console.log("Wishlist ID:", name));
   // Handler to add item to cart
-  const handleAddToCart = async (product: ShopProduct) => {
+  const handleAddToCart = async (product: WishlistProduct) => {
     // Use safe fallback for price ID
     const priceId =
-      product.prices && product.prices.length > 0 ? product.prices[0].id : 1;
+      product.prices && product.prices.length > 0 ? product.prices[0]?.id : 1;
 
     await addToCart({
       productId: product.id,
@@ -93,7 +119,6 @@ export default function WishlistPage() {
   if (!isClient) {
     return <div className="min-h-screen bg-gray-50 dark:bg-gray-900" />;
   }
-
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
       {/* Header */}
@@ -125,80 +150,93 @@ export default function WishlistPage() {
       ) : wishlistProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           <AnimatePresence mode="popLayout">
-            {wishlistProducts.map((product) => (
-              <motion.div
-                key={product.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col group relative"
-              >
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toggleWishlist(product.id.toString());
-                  }}
-                  className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="Remove from wishlist"
+            {wishlistProducts.map((product) => {
+              const primaryPrice = Array.isArray(product.prices) && product.prices.length > 0
+                ? product.prices[0]
+                : undefined;
+              const displayPrice = product.price ?? primaryPrice?.price ?? 0;
+              const displayWeight = primaryPrice?.weight ? `${primaryPrice.weight} ${primaryPrice.unit}` : null;
+              const ratingValue = typeof product.rating === "object" ? product.rating?.rate : product.rating;
+              return (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col group relative"
                 >
-                  <Trash2 size={18} />
-                </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleWishlist(product.id.toString());
+                    }}
+                    className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Remove from wishlist"
+                  >
+                    <Trash2 size={18} />
+                  </button>
 
-                <Link
-                  href={`/products/${product.id}`}
-                  className="relative w-full aspect-square bg-gray-50 dark:bg-gray-700 block"
-                >
-                  {product.images && product.images.length > 0 ? (
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      layout="fill"
-                      objectFit="cover"
-                      className="group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <span className="text-xs">name is {product.name}</span>
-                    </div>
-                  )}
-                </Link>
-
-                <div className="p-4 flex flex-col grow">
-                  <Link href={`/products/${product.id}`}>
-                    <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1 mb-1 hover:text-yellow-600 dark:hover:text-yellow-500 transition-colors">
-                      {product.name}
-                    </h3>
+                  <Link
+                    href={`/products/${product.id}`}
+                    className="relative w-full aspect-square bg-gray-50 dark:bg-gray-700 block"
+                  >
+                    {product.images && product.images.length > 0 ? (
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        layout="fill"
+                        objectFit="cover"
+                        className="group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <span className="text-xs">name is {product.name}</span>
+                      </div>
+                    )}
                   </Link>
 
-                  <div className="flex items-center gap-1 mb-3">
-                    <Star size={14} className="text-yellow-400 fill-current" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {product.rating || "4.5"} (20+ reviews)
-                    </span>
-                  </div>
+                  <div className="p-4 flex flex-col grow">
+                    <Link href={`/products/${product.id}`}>
+                      <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1 mb-1 hover:text-yellow-600 dark:hover:text-yellow-500 transition-colors">
+                        {product.name}
+                      </h3>
+                    </Link>
 
-                  <div className="mt-auto flex items-center justify-between gap-3">
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      ₹{product.price}
-                    </span>
+                    <div className="flex items-center gap-1 mb-3">
+                      <Star size={14} className="text-yellow-400 fill-current" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {ratingValue ?? "4.5"} (20+ reviews)
+                      </span>
+                    </div>
 
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      disabled={isCartLoading}
-                      className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      {isCartLoading ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <ShoppingCart size={16} />
-                      )}
-                      Add
-                    </button>
+                    <div className="mt-auto flex items-center justify-between gap-3">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        ₹{displayPrice}
+                        {displayWeight ? (
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-1">
+                            ({displayWeight})
+                          </span>
+                        ) : null}
+                      </span>
+
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        disabled={isCartLoading}
+                        className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+                      >
+                        {isCartLoading ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <ShoppingCart size={16} />
+                        )}
+                        Add
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
       ) : (

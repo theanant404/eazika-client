@@ -55,18 +55,21 @@ export interface UpdateProductPayload extends Partial<NewProductFormData> {
 }
 
 export interface ShopProduct {
-  id: number;
-  name: string;
-  description: string;
-  images: string[];
-  stock: number;
-  isActive: boolean;
-  isGlobal: boolean;
-  category: string;
-  price: number;
-  prices?: ProductPrice[];
-  rating?: number;
-  isTrending?: boolean;
+  data: {
+    id: number;
+    name: string;
+    description: string;
+    images: string[];
+    stock: number;
+    isActive: boolean;
+    isGlobal: boolean;
+    category: string;
+    price: number;
+    prices?: ProductPrice[];
+    rating?: number;
+    isTrending?: boolean;
+  }
+
 }
 
 export interface ShopOrder {
@@ -329,21 +332,10 @@ export const ShopService = {
       const response = await axios.get<ShopProduct>(
         `/customers/products/${id}`
       );
-      return response.data;
+      // console.log("Fetched product:", response.data.data);
+      return response.data.data;
     } catch (error) {
       console.warn(`Product ${id} not found. Returning placeholder.`, error);
-
-      return {
-        id: id,
-        name: "Product Not Found",
-        description: "This product details could not be loaded.",
-        price: 0,
-        stock: 0,
-        isActive: false,
-        isGlobal: false,
-        category: "Unknown",
-        images: [],
-      } as ShopProduct;
     }
   },
 
