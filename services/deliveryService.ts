@@ -51,15 +51,22 @@ export interface DeliveryOrder {
   addressId: number;
   address?: {
     line1?: string;
+    line2?: string;
     street?: string;
     city?: string;
     state?: string;
     zip?: string;
     country?: string;
-    geoLocation?: string;
+    geoLocation?:
+    | string
+    | {
+      raw?: string;
+      latitude?: string | number;
+      longitude?: string | number;
+    };
     name?: string;
     phone?: string;
-    pincode?: string;
+    pinCode?: string;
   };
   paymentMethod: string;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
@@ -70,6 +77,29 @@ export interface DeliveryOrder {
   customerName?: string;
   pickupAddress?: string;
   deliveryAddress?: string;
+  items?: Array<{
+    id: number;
+    productId: number;
+    priceId: number;
+    quantity: number;
+    unit?: string;
+    weight?: number;
+    price?: number;
+    product?: {
+      id: number;
+      name: string;
+      brand?: string;
+      images?: string[];
+      category?: string;
+    };
+    priceDetails?: {
+      id: number;
+      price?: number;
+      discount?: number;
+      weight?: number;
+      unit?: string;
+    };
+  }>;
 }
 
 export const DeliveryService = {

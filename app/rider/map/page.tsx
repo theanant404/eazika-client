@@ -103,8 +103,24 @@ const defaultCenter = {
   lng: 79.0882,
 };
 
-const parseGeo = (geo?: string | null): { lat: number; lng: number } | null => {
-  if (!geo || typeof geo !== "string") return null;
+const parseGeo = (
+  geo?:
+    | string
+    | null
+    | {
+      raw?: string;
+      latitude?: string | number;
+      longitude?: string | number;
+    }
+): { lat: number; lng: number } | null => {
+  if (!geo) return null;
+
+  if (typeof geo === "object") {
+    const raw = geo.raw || `${geo.latitude ?? ""},${geo.longitude ?? ""}`;
+    return parseGeo(typeof raw === "string" ? raw : null);
+  }
+
+  if (typeof geo !== "string") return null;
   const parts = geo.split(",");
   if (parts.length !== 2) return null;
   const lat = parseFloat(parts[0].trim());
@@ -154,6 +170,40 @@ export default function DeliveryMapPage() {
   const destinationLocation = useMemo(() => {
     return parseGeo((activeOrder as any)?.address?.geoLocation) || null;
   }, [activeOrder]);
+  const orderItems = useMemo(() => {
+    const rawItems = (activeOrder as any)?.items;
+    if (!Array.isArray(rawItems)) return [];
+
+    return rawItems
+      .map((item: any) => {
+        const unit = item?.priceDetails?.unit || item?.unit;
+        const weight = item?.priceDetails?.weight || item?.weight;
+        const price = typeof item?.priceDetails?.price === "number"
+          ? item.priceDetails.price
+          : item?.price;
+        const quantity = typeof item?.quantity === "number" ? item.quantity : undefined;
+        const lineTotal =
+          typeof price === "number" && typeof quantity === "number"
+            ? price * quantity
+            : undefined;
+
+        return {
+          id: item?.id || item?.productId,
+          name: item?.product?.name || item?.productName || item?.name,
+          quantity,
+          unit,
+          weight,
+          price,
+          lineTotal,
+          image: item?.product?.images?.[0] || item?.image,
+          discount: item?.priceDetails?.discount,
+        };
+      })
+      .filter((item: any) => item.name);
+  }, [activeOrder]);
+
+  const formatPrice = (value?: number) =>
+    typeof value === "number" ? `₹${value.toFixed(2)}` : null;
 
   const firstQueueGeo = useMemo(() => {
     return parseGeo((queue?.[0] as any)?.address?.geoLocation) || null;
@@ -470,7 +520,6 @@ export default function DeliveryMapPage() {
         Locating Satellites...
       </div>
     );
-
   return (
     <div className="h-full w-full relative bg-gray-900">
       <GoogleMap
@@ -593,18 +642,84 @@ export default function DeliveryMapPage() {
               </span>
             </div>
             <h2 className="text-white font-bold text-2xl">
-              {activeOrder.customerName || "Customer"}
+              {activeOrder.address?.name || "Customer"}
             </h2>
             <div className="flex items-center gap-1 mt-1 text-gray-400">
               <MapPin size={14} />
               <p className="text-sm truncate max-w-[250px]">
-                {activeOrder.deliveryAddress}
+                {activeOrder.address?.line1}
+                {activeOrder.address?.line2
+                  ? `, ${activeOrder.address.line2}`
+                  : ""}
+                , {activeOrder.address?.city}
+                {activeOrder.address?.state
+                  ? `, ${activeOrder.address.state} `
+                  : ""}
+                {activeOrder.address?.pinCode}
               </p>
+              <br />
+
+
+
+            </div><div>
+              <p>
+                {activeOrder.address?.phone}
+              </p>
+
             </div>
           </div>
           <button className="w-12 h-12 bg-gray-800 rounded-2xl flex items-center justify-center text-green-500 border border-gray-700 shadow-lg active:scale-95 transition-transform">
             <Phone size={24} />
           </button>
+        </div>
+
+        <div className="bg-gray-800 border border-gray-700 rounded-2xl p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white font-semibold">Items</p>
+            <p className="text-gray-400 text-xs">{orderItems.length} items</p>
+          </div>
+          {orderItems.length > 0 ? (
+            <div className="space-y-4">
+              {orderItems.map((item, idx) => (
+                <div
+                  key={`${item.id || idx}-${item.name}`}
+                  className="flex items-start justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-700 border border-gray-600 flex-shrink-0">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                          No Img
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-semibold leading-tight">{item.name}</p>
+                      <p className="text-gray-400 text-xs">
+                        Qty {item.quantity ?? "-"}
+                        {item.unit ? ` ${item.unit}` : ""}
+                        {item.weight ? ` (${item.weight})` : ""}
+                      </p>
+                      {item.discount ? (
+                        <p className="text-green-400 text-xs">{item.discount}% off</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="text-right text-white text-sm font-semibold">
+                    {formatPrice(item.lineTotal) || formatPrice(item.price) || "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-xs">Item details not available yet.</p>
+          )}
         </div>
 
         {!isArrived ? (
