@@ -17,7 +17,7 @@ export default function DeliveryLayout({
 
   const navItems = [
     { name: "Orders", href: "/rider", icon: List },
-    { name: "Map", href: "/rider/map", icon: MapPin },
+    { name: "Map", href: "/rider/maps", icon: MapPin },
     { name: "History", href: "/rider/history", icon: History },
     { name: "Profile", href: "/rider/profile", icon: User },
   ];
