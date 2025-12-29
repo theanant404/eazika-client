@@ -57,6 +57,9 @@ export interface DeliveryOrder {
     zip?: string;
     country?: string;
     geoLocation?: string;
+    name?: string;
+    phone?: string;
+    pincode?: string;
   };
   paymentMethod: string;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
