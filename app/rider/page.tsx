@@ -12,10 +12,10 @@ const parseGeo = (
     | string
     | null
     | {
-        raw?: string;
-        latitude?: string | number;
-        longitude?: string | number;
-      }
+      raw?: string;
+      latitude?: string | number;
+      longitude?: string | number;
+    }
 ): { lat: number; lng: number } | null => {
   if (!geo) return null;
   if (typeof geo === 'object') {
@@ -258,11 +258,11 @@ export default function DeliveryHomePage() {
                         <p className="text-gray-300 text-xs truncate">
                           Deliver to: {order.address?.line1 || order.address?.street || "Unknown Address"}
                         </p>
-                        {(order.address?.city || order.address?.pincode) && (
+                        {(order.address?.city || order.address?.pinCode) && (
                           <p className="text-gray-400 text-[11px] truncate">
                             {order.address?.city}
-                            {order.address?.city && order.address?.pincode ? ", " : ""}
-                            {order.address?.pincode}
+                            {order.address?.city && order.address?.pinCode ? ", " : ""}
+                            {order.address?.pinCode}
                           </p>
                         )}
                         {order.address?.phone && (
