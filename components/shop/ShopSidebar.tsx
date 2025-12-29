@@ -25,7 +25,7 @@ export const menuItems = [
   { name: "Store Settings", href: "/shop/settings", icon: Settings },
 ];
 export function ShopSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
 
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen fixed left-0 top-0 hidden md:flex flex-col z-30">
