@@ -34,7 +34,7 @@ export interface Order {
 export default function OrderDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const orderId = Number(params.id);
+  const orderId = Number(params?.id);
 
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
