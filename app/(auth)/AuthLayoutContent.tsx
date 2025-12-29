@@ -10,7 +10,7 @@ export default function AuthLayoutContent({
 }) {
     const pathName = usePathname();
     const searchParams = useSearchParams();
-    const redirect = searchParams.get("redirect") || "";
+    const redirect = searchParams?.get("redirect") || "";
 
     return (
         <>
