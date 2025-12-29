@@ -25,4 +25,11 @@ if (!redisUrl) {
   }
 }
 
+// Silence unhandled error event logs from ioredis when connection info is missing/invalid.
+if (redis && typeof (redis as any).on === "function") {
+  (redis as any).on("error", () => {
+    /* swallow noisy redis connection errors in non-critical contexts */
+  });
+}
+
 export default redis;
