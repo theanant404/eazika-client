@@ -74,7 +74,7 @@ export interface ShopOrder {
   customerName: string;
   totalAmount: number;
   name: string;
-  geoLocation?: string;
+  geolocation?: string;
   status:
   | "pending"
   | "preparing"
@@ -187,11 +187,11 @@ export const ShopService = {
     return response.data;
   },
 
-  getShopGeoLocation: async (): Promise<string | undefined> => {
-    const response = await axios.get("/shops/get-shop-address");
-    // console.log("Shop address response:", response);
-    return response.data?.geoLocation;
-  },
+  // getShopGeoLocation: async (): Promise<string | undefined> => {
+  //   const response = await axios.get("/shops/get-shop-address");
+  //   // console.log("Shop address response:", response);
+  //   return response.data?.geoLocation;
+  // },
   updateShopAddress: async (data: {
     name?: string;
     phone?: string;
@@ -228,7 +228,17 @@ export const ShopService = {
       throw error;
     }
   },
-
+  getShopGeoLocation: async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/shops/shop-geo-location`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching shop geo-location:", error);
+      throw error;
+    }
+  },
   getShopDeliverySlots: async () => {
     try {
       const response = await axiosInstance.get(
@@ -477,7 +487,6 @@ export const ShopService = {
     const response = await axios.get(
       `/shops/orders/get-current-orders?page=${pageOrStatus}&limit=${limit}`
     );
-    console.log("Fetched shop orders:", response);
     return response.data.data;
   },
 

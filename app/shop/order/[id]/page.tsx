@@ -91,7 +91,7 @@ export default function ShopOrderDetailsPage({
           try {
             shopGeo = await shopService.getShopGeoLocation();
             // console.log(shopGeo.data.geoLocation, "this is shop geo from service")
-            if (!shopGeo.data.geoLocation) {
+            if (!shopGeo?.data?.geoLocation) {
               setDistanceNote("Shop location missing. Add geo in Shop Settings.");
             }
           } catch (err) {
@@ -103,7 +103,7 @@ export default function ShopOrderDetailsPage({
         const productGeo = (data as any).productGeoLocation || (data.orderItems?.[0] as any)?.geoLocation;
 
         const from = parseGeo(customerGeo);
-        const toShop = parseGeo(shopGeo.data.geoLocation || null);
+        const toShop = parseGeo(shopGeo?.data?.geoLocation || null);
         // console.log("this is shop location", toShop)
         const toProduct = parseGeo(productGeo);
 
@@ -189,7 +189,7 @@ export default function ShopOrderDetailsPage({
       setIsUpdating(false);
     }
   };
-  // console.log(order)
+  console.log(order)
 
   return (
     <div className="max-w-4xl mx-auto pb-24 md:pb-8">
