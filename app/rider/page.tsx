@@ -31,7 +31,7 @@ export default function DeliveryHomePage() {
   const handleResume = () => {
     router.push("/rider/map");
   };
-
+  console.log(orders)
   // Offline View
   if (!isOnline) {
     return (
@@ -86,7 +86,7 @@ export default function DeliveryHomePage() {
                   Current Delivery
                 </h2>
                 <p className="text-green-100 text-sm">
-                  Order #{activeOrder.id}
+                  Order #{activeOrder.id} • {activeOrder.totalProducts} {activeOrder.totalProducts === 1 ? "item" : "items"}
                 </p>
               </div>
               <div className="bg-white/20 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm font-bold animate-pulse">
@@ -98,7 +98,10 @@ export default function DeliveryHomePage() {
                 <MapPin size={16} /> Drop Location:
               </div>
               <p className="text-white font-medium text-lg leading-snug">
-                {activeOrder.deliveryAddress}
+                {activeOrder.address?.line1 || activeOrder.address?.street || "Unknown Address"}
+              </p>
+              <p className="text-green-100 text-sm mt-2">
+                Total Amount: ₹{activeOrder.totalAmount}
               </p>
             </div>
             <button
@@ -134,10 +137,10 @@ export default function DeliveryHomePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-gray-200 font-medium text-sm truncate">
-                        {order.deliveryAddress}
+                        {order.address?.line1 || order.address?.street || "Unknown Address"}
                       </p>
                       <p className="text-gray-500 text-xs mt-0.5">
-                        #{order.id} • ₹{order.totalAmount}
+                        {order.totalProducts} {order.totalProducts === 1 ? "item" : "items"} • ₹{order.totalAmount}
                       </p>
                     </div>
                     <div className="text-right shrink-0">

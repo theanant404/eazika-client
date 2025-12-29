@@ -20,7 +20,7 @@ export interface UpdateDeliveryProfilePayload {
   vehicleNo?: string;
   vehicleOwnerName?: string;
   licenseNumber?: string;
-  image?: string; 
+  image?: string;
 }
 
 export interface DeliveryProfile {
@@ -49,6 +49,15 @@ export interface DeliveryOrder {
   totalProducts: number;
   totalAmount: number;
   addressId: number;
+  address?: {
+    line1?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    geoLocation?: string;
+  };
   paymentMethod: string;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
   cancelBy?: string;
@@ -101,34 +110,34 @@ export const DeliveryService = {
   // Endpoint: POST /uploads/avatar -> getSignedUrl
   uploadImage: async (file: File): Promise<string> => {
     try {
-        const fileName = `rider-doc-${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
-        const contentType = file.type || 'application/octet-stream';
+      const fileName = `rider-doc-${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+      const contentType = file.type || 'application/octet-stream';
 
-        // 1. Get Signed URL
-        // We use /uploads/avatar because it maps to the generic getSignedUrl controller on the server
-        const { data } = await axiosInstance.post<{ signedUrl: string, publicUrl: string }>('/uploads/avatar', {
-            fileName,
-            contentType
-        });
+      // 1. Get Signed URL
+      // We use /uploads/avatar because it maps to the generic getSignedUrl controller on the server
+      const { data } = await axiosInstance.post<{ signedUrl: string, publicUrl: string }>('/uploads/avatar', {
+        fileName,
+        contentType
+      });
 
-        // 2. Direct Upload to GCS (bypass interceptors)
-        // We use fetch here to ensure no extra headers are sent
-        const uploadResponse = await fetch(data.signedUrl, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': contentType,
-            },
-            body: file
-        });
+      // 2. Direct Upload to GCS (bypass interceptors)
+      // We use fetch here to ensure no extra headers are sent
+      const uploadResponse = await fetch(data.signedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': contentType,
+        },
+        body: file
+      });
 
-        if (!uploadResponse.ok) {
-            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-        }
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
 
-        return data.publicUrl;
+      return data.publicUrl;
     } catch (error) {
-        console.error("Image upload failed", error);
-        throw error;
+      console.error("Image upload failed", error);
+      throw error;
     }
   },
 
@@ -142,15 +151,15 @@ export const DeliveryService = {
   // Get nearby shops for registration
   getNearbyShops: async (lat?: number, lng?: number, city?: string) => {
     // Assuming an endpoint exists or using a general shop search
-    const response = await axiosInstance.get('/delivery/shops/nearby', { 
-        params: { lat, lng, city } 
+    const response = await axiosInstance.get('/delivery/shops/nearby', {
+      params: { lat, lng, city }
     });
     // Fix: Extract .data from ApiResponse wrapper
     return response.data.data;
   },
 
   getAvailableCities: async () => {
-      const response = await axiosInstance.get('/delivery/cities/available');
-      return response.data.data;
+    const response = await axiosInstance.get('/delivery/cities/available');
+    return response.data.data;
   }
 };

@@ -226,17 +226,7 @@ export const ShopService = {
       throw error;
     }
   },
-  getShopGeoLocation: async () => {
-    try {
-      const response = await axiosInstance.get(
-        `/shops/shop-geo-location`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching shop geo-location:", error);
-      throw error;
-    }
-  },
+
   getShopDeliverySlots: async () => {
     try {
       const response = await axiosInstance.get(

@@ -351,14 +351,14 @@ export default function ShopRegistrationContent() {
         <main className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden w-full border border-gray-100 dark:border-gray-700 flex flex-col h-[600px] md:h-[650px]">
             {/* Header */}
 
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-center relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0">
                 <button
                     onClick={handleBack}
-                    className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="absolute left-6 p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                     <ArrowLeft size={20} className="text-gray-700 dark:text-white" />
                 </button>
-                <div className="flex-1">
+                <div className="text-center">
                     <h1 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
                         Register Shop
                     </h1>
@@ -368,42 +368,60 @@ export default function ShopRegistrationContent() {
                 </div>
             </div>
             {/* Progress Bar */}
-            <div className="px-8 pt-4 pb-1 shrink-0">
-                <div className="flex justify-between relative">
-                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-100 dark:bg-gray-700 z-0 -translate-y-1/2 rounded-full" />
+            <div className="w-full px-8 py-6">
+                <div className="relative flex items-center justify-between w-full">
+
+                    {/* Background Track (Grey Line) */}
+                    <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-200 dark:bg-gray-800 -translate-y-1/2 z-0" />
+
+                    {/* Animated Active Track (Yellow Line) */}
                     <motion.div
-                        className="absolute top-1/2 left-0 h-0.5 bg-yellow-500 z-0 -translate-y-1/2 origin-left rounded-full"
+                        className="absolute top-1/2 left-0 h-[2px] bg-yellow-500 z-0 -translate-y-1/2 origin-left"
                         initial={{ width: "0%" }}
-                        animate={{ width: `${((currentStep - 1) / 3) * 100}%` }}
-                        transition={{ duration: 0.3 }}
+                        animate={{ width: `${(currentStep - 1) / (STEPS.length - 1) * 100}%` }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
                     />
 
-                    {STEPS.map((step) => {
-                        const isActive = step.id <= currentStep;
+                    {/* Step Nodes */}
+                    {STEPS.map((step, index) => {
+                        const isCompleted = step.id < currentStep;
+                        const isActive = step.id === currentStep;
+
                         return (
-                            <div
-                                key={step.id}
-                                className="relative z-10 flex flex-col items-center gap-1"
-                            >
+                            <div key={step.id} className="relative z-10 flex flex-col items-center">
+                                {/* Icon Circle */}
                                 <motion.div
+                                    initial={false}
+                                    animate={{
+                                        scale: isActive ? 1.2 : 1,
+                                        backgroundColor: isActive || isCompleted ? "#eab308" : "#ffffff",
+                                        borderColor: isActive || isCompleted ? "#eab308" : "#d1d5db",
+                                    }}
                                     className={cn(
-                                        "w-7 h-7 rounded-full flex items-center justify-center border-2 transition-colors",
-                                        isActive
-                                            ? "bg-yellow-500 border-yellow-500 text-white shadow-sm"
-                                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-300 dark:text-gray-600"
+                                        "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-sm",
+                                        isActive ? "ring-4 ring-yellow-500/20" : ""
                                     )}
-                                    animate={{ scale: step.id === currentStep ? 1.5 : 1 }}
                                 >
-                                    <step.icon size={14} />
+                                    <step.icon
+                                        size={18}
+                                        className={cn(
+                                            "transition-colors",
+                                            isActive || isCompleted ? "text-white" : "text-gray-400"
+                                        )}
+                                    />
                                 </motion.div>
-                                <span
-                                    className={`text-[9px] font-bold ${isActive
-                                        ? "text-yellow-600 dark:text-yellow-500"
-                                        : "text-transparent"
-                                        }`}
-                                >
-                                    {step.title}
-                                </span>
+
+                                {/* Label - Fixed Positioning to prevent shifting */}
+                                <div className="absolute top-10 flex flex-col items-center w-max">
+                                    <span
+                                        className={cn(
+                                            "text-[10px] uppercase tracking-wider font-black transition-colors duration-300",
+                                            isActive || isCompleted ? "text-yellow-600 dark:text-yellow-500" : "text-gray-400"
+                                        )}
+                                    >
+                                        {step.title}
+                                    </span>
+                                </div>
                             </div>
                         );
                     })}
@@ -769,7 +787,7 @@ export default function ShopRegistrationContent() {
         }
         .input-field:focus {
           border-color: #eab308;
-          box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2) \\\\;;
+          box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
         }
         :global(.dark) .input-field {
           background-color: #111827;
@@ -783,3 +801,73 @@ export default function ShopRegistrationContent() {
         </main>
     );
 }
+
+
+
+const Stepper = ({ currentStep, STEPS }) => {
+    const totalSteps = STEPS.length;
+    // Calculate progress width: (completed gaps / total gaps)
+    const progressWidth = ((currentStep - 1) / (totalSteps - 1)) * 100;
+
+    return (
+        <div className="w-full px-8 py-6">
+            <div className="relative flex items-center justify-between w-full">
+
+                {/* Background Track (Grey Line) */}
+                <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-200 dark:bg-gray-800 -translate-y-1/2 z-0" />
+
+                {/* Animated Active Track (Yellow Line) */}
+                <motion.div
+                    className="absolute top-1/2 left-0 h-[2px] bg-yellow-500 z-0 -translate-y-1/2 origin-left"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${progressWidth}%` }}
+                    transition={{ duration: 0.4, ease: "easeInOut" }}
+                />
+
+                {/* Step Nodes */}
+                {STEPS.map((step, index) => {
+                    const isCompleted = step.id < currentStep;
+                    const isActive = step.id === currentStep;
+
+                    return (
+                        <div key={step.id} className="relative z-10 flex flex-col items-center">
+                            {/* Icon Circle */}
+                            <motion.div
+                                initial={false}
+                                animate={{
+                                    scale: isActive ? 1.2 : 1,
+                                    backgroundColor: isActive || isCompleted ? "#eab308" : "#ffffff",
+                                    borderColor: isActive || isCompleted ? "#eab308" : "#d1d5db",
+                                }}
+                                className={cn(
+                                    "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-sm",
+                                    isActive ? "ring-4 ring-yellow-500/20" : ""
+                                )}
+                            >
+                                <step.icon
+                                    size={18}
+                                    className={cn(
+                                        "transition-colors",
+                                        isActive || isCompleted ? "text-white" : "text-gray-400"
+                                    )}
+                                />
+                            </motion.div>
+
+                            {/* Label - Fixed Positioning to prevent shifting */}
+                            <div className="absolute top-10 flex flex-col items-center w-max">
+                                <span
+                                    className={cn(
+                                        "text-[10px] uppercase tracking-wider font-black transition-colors duration-300",
+                                        isActive || isCompleted ? "text-yellow-600 dark:text-yellow-500" : "text-gray-400"
+                                    )}
+                                >
+                                    {step.title}
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
