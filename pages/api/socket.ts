@@ -13,7 +13,7 @@ export const config = {
 
 export default function handler(req: NextApiRequest, res: NextApiResponseServerIO) {
   if (!res.socket) {
-    console.error("socket-server:no-res-socket", { method: req.method, url: req.url });
+    // console.error("socket-server:no-res-socket", { method: req.method, url: req.url });
     return res.status(500).json({ error: "Socket unavailable" });
   }
 
@@ -24,12 +24,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponseServerI
     });
 
     io.on("connection", (socket) => {
-      console.info("socket-server:connected", { socketId: socket.id });
+      // console.info("socket-server:connected", { socketId: socket.id });
       socket.on("disconnect", (reason) => {
-        console.info("socket-server:disconnected", { socketId: socket.id, reason });
+        // console.info("socket-server:disconnected", { socketId: socket.id, reason });
       });
       socket.on("error", (err) => {
-        console.warn("socket-server:error", err);
+        // console.warn("socket-server:error", err);
       });
 
       socket.on("join-order", (orderId: string | number) => {
@@ -57,7 +57,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponseServerI
             try {
               await redis.set(`order:${payload.orderId}:location`, JSON.stringify(snapshot), "EX", 900);
             } catch (e) {
-              console.warn("Failed to persist location to redis", e);
+              // console.warn("Failed to persist location to redis", e);
             }
           }
 

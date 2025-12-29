@@ -8,7 +8,8 @@ import {
   X,
   Star,
   Loader2,
-  Clock
+  Clock,
+  Copy
 } from 'lucide-react';
 import { motion, PanInfo, useAnimation, AnimatePresence, useDragControls } from 'framer-motion';
 import { useRouter, useParams } from 'next/navigation';
@@ -50,15 +51,45 @@ const MapPlaceholder = ({ orderId }: { orderId: number }) => (
 const OrderDetailsContent = ({
   tracking,
   onCancel,
+  customerLocation,
 }: {
   tracking: TrackingDetails;
   onCancel: () => void;
+  customerLocation?: { lat: number; lng: number } | null;
 }) => {
+  const rawGeo = tracking.address?.geoLocation;
+  const locationText = customerLocation
+    ? `${customerLocation.lat.toFixed(4)}, ${customerLocation.lng.toFixed(4)}`
+    : rawGeo || 'Location unavailable';
+  const mapHref = customerLocation
+    ? `https://www.google.com/maps/search/?api=1&query=${customerLocation.lat},${customerLocation.lng}`
+    : rawGeo
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rawGeo)}`
+      : undefined;
+  const formattedAddress = [
+    tracking.address?.line1,
+    tracking.address?.street,
+    tracking.address?.city,
+    tracking.address?.state,
+    tracking.address?.pinCode,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   const handleCall = () => {
     if (tracking.deliveryBoy?.phone) {
       navigator.clipboard.writeText(tracking.deliveryBoy.phone);
       alert(`Copied ${tracking.deliveryBoy.phone} to clipboard!`);
     }
+  };
+
+  const handleCopyLocation = () => {
+    const valueToCopy = customerLocation
+      ? `${customerLocation.lat},${customerLocation.lng}`
+      : rawGeo;
+    if (!valueToCopy) return;
+    navigator.clipboard.writeText(valueToCopy);
+    alert('Location copied to clipboard');
   };
   // console.log(tracking);
   return (
@@ -106,6 +137,43 @@ const OrderDetailsContent = ({
           <p className="text-xl font-bold text-yellow-600 dark:text-yellow-500 tracking-widest">
             4829
           </p>
+        </div>
+      </div>
+
+      {/* Delivery Location */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 flex items-center justify-center">
+            <MapPin size={18} />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Delivery location</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{locationText}</p>
+            {formattedAddress && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{formattedAddress}</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            {mapHref && (
+              <a
+                href={mapHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+              >
+                Open map
+              </a>
+            )}
+            {(customerLocation || rawGeo) && (
+              <button
+                onClick={handleCopyLocation}
+                className="px-3 py-2 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+              >
+                <Copy size={14} />
+                Copy
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -166,7 +234,7 @@ function TrackOrderContent() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const customerLocation = useMemo(() => {
-    const geo = (tracking as any)?.address?.geoLocation as string | undefined;
+    const geo = tracking?.address?.geoLocation;
     if (!geo || typeof geo !== 'string') return userLocation;
     const parts = geo.split(',');
     if (parts.length !== 2) return userLocation;
@@ -314,7 +382,7 @@ function TrackOrderContent() {
           <div className="p-6 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-10">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Tracking Order #{tracking.orderId}</h1>
           </div>
-          <OrderDetailsContent tracking={tracking} onCancel={() => setIsCancelling(true)} />
+          <OrderDetailsContent tracking={tracking} customerLocation={customerLocation} onCancel={() => setIsCancelling(true)} />
         </div>
       </div>
 
@@ -361,7 +429,7 @@ function TrackOrderContent() {
           </div>
 
           <div className="h-full overflow-y-auto no-scrollbar pb-[100px] rounded-t-4xl">
-            <OrderDetailsContent tracking={tracking} onCancel={() => setIsCancelling(true)} />
+            <OrderDetailsContent tracking={tracking} customerLocation={customerLocation} onCancel={() => setIsCancelling(true)} />
           </div>
         </motion.div>
       </div>

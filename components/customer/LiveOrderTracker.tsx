@@ -50,15 +50,15 @@ export default function LiveOrderTracker({ orderId, customerLocation, onRiderLoc
     const fetchInitial = async () => {
       try {
         const res = await fetch(`/api/order-location?orderId=${normalizedOrderId}`, { cache: "no-store" });
-        console.info("customer-fetch:order-location", {
-          status: res.status,
-          ok: res.ok,
-          redirected: res.redirected,
-        });
+        // console.info("customer-fetch:order-location", {
+        //   status: res.status,
+        //   ok: res.ok,
+        //   redirected: res.redirected,
+        // });
         if (res.status === 204) return; // waiting for first emit
         if (!res.ok) return;
         const data = await res.json();
-        console.info("customer-fetch:order-location:data", data);
+        // console.info("customer-fetch:order-location:data", data);
         if (data?.location) {
           setRiderLocation(data.location);
           onRiderLocation?.(data.location);
@@ -71,11 +71,11 @@ export default function LiveOrderTracker({ orderId, customerLocation, onRiderLoc
 
     fetchInitial();
 
-    console.info("customer-socket:join-order", normalizedOrderId);
+    // console.info("customer-socket:join-order", normalizedOrderId);
     socket.emit("join-order", normalizedOrderId);
 
     const handler = (payload: { orderId: string | number; location: LatLng }) => {
-      console.info("customer-socket:order-location:raw", payload);
+      // console.info("customer-socket:order-location:raw", payload);
       if (String(payload.orderId) === normalizedOrderId && payload.location) {
         setRiderLocation(payload.location);
         onRiderLocation?.(payload.location);

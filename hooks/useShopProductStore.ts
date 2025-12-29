@@ -124,7 +124,7 @@ export const useShopProductStore = create<ShopProductState>((set, get) => ({
 
   addProductFromGlobal: async (product) => {
     // Mock adding to inventory
-    console.log("Adding global product", product.name);
+    // console.log("Adding global product", product.name);
     // In real app: await ShopService.addProduct({ ...product, isGlobal: true });
   }
 }));

@@ -72,6 +72,18 @@ export interface TrackingDetails {
     currentLat?: number;
     currentLng?: number;
   };
+  address?: {
+    id?: number;
+    name?: string;
+    phone?: string;
+    line1?: string;
+    line2?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    pinCode?: string;
+    geoLocation?: string;
+  };
 }
 
 export interface AddToCartPayload {
