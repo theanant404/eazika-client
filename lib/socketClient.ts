@@ -15,16 +15,16 @@ const noopSocket: Pick<Socket, "on" | "off" | "emit" | "connected" | "connect" |
 
 const socket = isBrowser
   ? io(process.env.NEXT_PUBLIC_SOCKET_URL || undefined, {
-      path: "/api/socket",
-      // Start with polling so the Next API route can spin up before upgrading.
-      transports: ["polling", "websocket"],
-      autoConnect: true,
-      reconnection: true,
-      reconnectionAttempts: 8,
-      reconnectionDelay: 800,
-      timeout: 10000,
-      withCredentials: true,
-    })
+    path: "/api/socket",
+    // Start with polling so the Next API route can spin up before upgrading.
+    transports: ["polling", "websocket"],
+    autoConnect: true,
+    reconnection: true,
+    reconnectionAttempts: 8,
+    reconnectionDelay: 800,
+    timeout: 10000,
+    withCredentials: true,
+  })
   : (noopSocket as Socket);
 
 if (isBrowser) {
