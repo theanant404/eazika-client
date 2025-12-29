@@ -58,13 +58,33 @@ const OrderDetailsContent = ({
   customerLocation?: { lat: number; lng: number } | null;
 }) => {
   const rawGeo = tracking.address?.geoLocation;
+  const normalizedRawGeo = (() => {
+    if (!rawGeo) return undefined;
+    if (typeof rawGeo === 'string') return rawGeo;
+    if (typeof rawGeo === 'object') {
+      const lat = (rawGeo as any).lat ?? (rawGeo as any).latitude;
+      const lng = (rawGeo as any).lng ?? (rawGeo as any).longitude;
+      const raw = (rawGeo as any).raw;
+      if (raw && typeof raw === 'string') return raw;
+      if (lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))) {
+        return `${lat}, ${lng}`;
+      }
+      try {
+        return JSON.stringify(rawGeo);
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
+  })();
+
   const locationText = customerLocation
     ? `${customerLocation.lat.toFixed(4)}, ${customerLocation.lng.toFixed(4)}`
-    : rawGeo || 'Location unavailable';
+    : normalizedRawGeo || 'Location unavailable';
   const mapHref = customerLocation
     ? `https://www.google.com/maps/search/?api=1&query=${customerLocation.lat},${customerLocation.lng}`
-    : rawGeo
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rawGeo)}`
+    : normalizedRawGeo
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(normalizedRawGeo)}`
       : undefined;
   const formattedAddress = [
     tracking.address?.line1,
@@ -75,7 +95,6 @@ const OrderDetailsContent = ({
   ]
     .filter(Boolean)
     .join(', ');
-
   const handleCall = () => {
     if (tracking.deliveryBoy?.phone) {
       navigator.clipboard.writeText(tracking.deliveryBoy.phone);
@@ -86,7 +105,7 @@ const OrderDetailsContent = ({
   const handleCopyLocation = () => {
     const valueToCopy = customerLocation
       ? `${customerLocation.lat},${customerLocation.lng}`
-      : rawGeo;
+      : normalizedRawGeo;
     if (!valueToCopy) return;
     navigator.clipboard.writeText(valueToCopy);
     alert('Location copied to clipboard');
@@ -235,13 +254,20 @@ function TrackOrderContent() {
 
   const customerLocation = useMemo(() => {
     const geo = tracking?.address?.geoLocation;
-    if (!geo || typeof geo !== 'string') return userLocation;
-    const parts = geo.split(',');
-    if (parts.length !== 2) return userLocation;
-    const lat = parseFloat(parts[0].trim());
-    const lng = parseFloat(parts[1].trim());
-    if (Number.isNaN(lat) || Number.isNaN(lng)) return userLocation;
-    return { lat, lng };
+    if (geo && typeof geo === 'object') {
+      const lat = Number((geo as any).lat ?? (geo as any).latitude);
+      const lng = Number((geo as any).lng ?? (geo as any).longitude);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng)) return { lat, lng };
+    }
+    if (geo && typeof geo === 'string') {
+      const parts = geo.split(',');
+      if (parts.length === 2) {
+        const lat = parseFloat(parts[0].trim());
+        const lng = parseFloat(parts[1].trim());
+        if (!Number.isNaN(lat) && !Number.isNaN(lng)) return { lat, lng };
+      }
+    }
+    return userLocation;
   }, [tracking, userLocation]);
 
   // Animation controls
@@ -261,6 +287,7 @@ function TrackOrderContent() {
     const loadTracking = async () => {
       try {
         const data = await CartService.trackOrder(Number(orderId));
+        console.log(data);
         // console.log("Track order data fetched", data);
         setTracking(data);
       } catch (error) {
