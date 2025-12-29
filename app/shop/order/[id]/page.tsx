@@ -189,7 +189,7 @@ export default function ShopOrderDetailsPage({
       setIsUpdating(false);
     }
   };
-  console.log(order)
+  // console.log(order)
 
   return (
     <div className="max-w-4xl mx-auto pb-24 md:pb-8">
