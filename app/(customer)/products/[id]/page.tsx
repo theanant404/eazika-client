@@ -212,7 +212,7 @@ export default function ProductPage() {
     setIsBuying(true);
     try {
       await handleAddToCart();
-      router.push("/checkout");
+      router.push("/cart");
     } finally {
       setIsBuying(false);
     }
