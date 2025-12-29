@@ -284,10 +284,10 @@ export default function DeliveryMapPage() {
   // Join order room for sockets and stream rider location periodically
   useEffect(() => {
     const orderId = (activeOrder as any)?.id || (activeOrder as any)?._id || (activeOrder as any)?.orderId;
-    console.info("rider-socket:init", {
-      orderId,
-      connected: socket.connected,
-    });
+    // console.info("rider-socket:init", {
+    //   orderId,
+    //   connected: socket.connected,
+    // });
     const handleConnect = () => console.info("rider-socket:connected", { orderId, socketId: socket.id });
     const handleDisconnect = () => console.warn("rider-socket:disconnected", { orderId });
     socket.on("connect", handleConnect);
@@ -318,21 +318,21 @@ export default function DeliveryMapPage() {
       if (destinationLocation) {
         const distance = distanceMeters(currentLocation, destinationLocation);
         if (distance <= STOP_DISTANCE_METERS) {
-          console.info("rider-socket:stop-sharing:arrived", {
-            orderId,
-            distance,
-          });
+          // console.info("rider-socket:stop-sharing:arrived", {
+          //   orderId,
+          //   distance,
+          // });
           stopSharingRef.current = true;
           if (intervalId) window.clearInterval(intervalId);
           return;
         }
       }
 
-      console.info("rider-socket:emit-location", {
-        orderId,
-        lat: currentLocation.lat,
-        lng: currentLocation.lng,
-      });
+      // console.info("rider-socket:emit-location", {
+      //   orderId,
+      //   lat: currentLocation.lat,
+      //   lng: currentLocation.lng,
+      // });
       socket.emit("rider-location", {
         orderId,
         location: { lat: currentLocation.lat, lng: currentLocation.lng },
@@ -458,6 +458,7 @@ export default function DeliveryMapPage() {
       toast.success("Delivery Completed!");
       setOtp(["", "", "", ""]);
       setIsArrived(false);
+      router.push("/rider");
     } else {
       toast.error("Invalid OTP");
     }
