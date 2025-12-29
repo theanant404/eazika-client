@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { mockShops } from '@/app/data/adminMock'; 
-import { 
-    ArrowLeft, 
-    MapPin, 
-    Phone, 
-    Mail, 
-    CheckCircle, 
-    XCircle, 
-    ShieldCheck, 
+import { mockShops } from '@/app/data/adminMock';
+import {
+    ArrowLeft,
+    MapPin,
+    Phone,
+    Mail,
+    CheckCircle,
+    XCircle,
+    ShieldCheck,
     FileText,
     ShoppingBag,
     Store,
@@ -23,7 +23,7 @@ type Shop = typeof mockShops[0];
 export default function AdminShopDetailsPage() {
     const params = useParams();
     const router = useRouter();
-    const id = Number(params.id);
+    const id = Number(params?.id);
     const [shop, setShop] = useState<Shop | null>(null);
 
     useEffect(() => {
@@ -72,21 +72,21 @@ export default function AdminShopDetailsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg"><ShoppingBag size={20}/></div>
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg"><ShoppingBag size={20} /></div>
                         <span className="text-sm font-medium text-gray-500">Total Orders</span>
                     </div>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{shop.orders}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-lg"><Store size={20}/></div>
+                        <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-lg"><Store size={20} /></div>
                         <span className="text-sm font-medium text-gray-500">Revenue</span>
                     </div>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{shop.revenue}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-lg"><ShieldCheck size={20}/></div>
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-lg"><ShieldCheck size={20} /></div>
                         <span className="text-sm font-medium text-gray-500">Compliance</span>
                     </div>
                     <p className="text-sm font-semibold text-green-600">Documents Verified</p>
