@@ -42,7 +42,7 @@ export default function ShopLayout({
             {mobileNavItems.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href !== "/shop" && pathname.startsWith(item.href));
+                (item.href !== "/shop" && (pathname || "").startsWith(item.href));
 
               return (
                 <Link
