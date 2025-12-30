@@ -29,7 +29,6 @@ import {
   Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { userService } from "@/services/userService";
 import { notificationService } from "@/services/notificationService";
 
 export default function NotificationsPage() {
