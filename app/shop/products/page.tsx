@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { shopStore } from "@/store";
 import { ProductForm } from "@/components/shop/ProductForm";
 import { shopService, type UpdateProductPayload } from "@/services/shopService";
+import type { ShopProduct } from "@/types/shop";
 import { toast } from "sonner";
 import type { NewProductFormData, ProductPriceType } from "@/types/shop";
 import PriceForm from "../../components/priceForm";
@@ -79,8 +80,8 @@ export default function ProductsPage() {
     unit: "grams",
   };
 
-  const productList = products?.products ?? [];
-  const globalProductList = globalProducts?.products ?? [];
+  const productList: ShopProduct[] = (products?.products as ShopProduct[]) ?? [];
+  const globalProductList: ShopProduct[] = (globalProducts?.products as ShopProduct[]) ?? [];
   const inventoryPagination = products?.pagination ?? {
     currentPage: 1,
     itemsPerPage: 10,
@@ -506,7 +507,7 @@ export default function ProductsPage() {
                 <td className="border-b p-4">{product.name}</td>
                 <td className="border-b p-4">{product.category}</td>
                 <td className="border-b p-4">{product.brand}</td>
-                <td className="border-b p-4">{product.rating || "N/A"}</td>
+                <td className="border-b p-4">{typeof product.rating === "object" ? product.rating?.rate ?? "N/A" : product.rating ?? "N/A"}</td>
                 <td className="border-b p-4 "><span className="">{product.isActive ? "Yes" : "No"}</span></td>
                 <td className="border-b p-4">
                   {product.isGlobalProduct ? "Yes" : "No"}
@@ -524,7 +525,7 @@ export default function ProductsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(editablePricing[Number(product.id)] ?? product.pricing).map(
+                      {(editablePricing[Number(product.id)] ?? (product as any).pricing ?? (product as any).prices ?? []).map(
                         (price, index) => (
                           <tr key={index}>
                             <td className="border p-2">{price.id ?? index + 1}</td>
@@ -785,7 +786,7 @@ export default function ProductsPage() {
                   <td className="border-b p-4">{product.name}</td>
                   <td className="border-b p-4">{product.category}</td>
                   <td className="border-b p-4">{product.brand}</td>
-                  <td className="border-b p-4">{product.rating || "N/A"}</td>
+                  <td className="border-b p-4">{typeof product.rating === "object" ? product.rating?.rate ?? "N/A" : product.rating ?? "N/A"}</td>
                   <td className="border-b p-4">
                     {product.isActive ? "Yes" : "No"}
                   </td>
@@ -803,7 +804,7 @@ export default function ProductsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {product.pricing.map((price, index) => (
+                        {(product as any).pricing?.map((price: any, index: number) => (
                           <tr key={index}>
                             <td className="border p-2">{index + 1}</td>
                             <td className="border p-2">{price.price}</td>

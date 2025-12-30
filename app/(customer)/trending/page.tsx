@@ -227,7 +227,7 @@ export default function TrendingPage() {
                             </span>
                             {/* Fake Discount Logic for visual appeal */}
                             <span className="text-xs text-gray-400 line-through ml-2">
-                              ₹{(product.price * 1.2).toFixed(0)}
+                              ₹{(((product.price ?? product.prices?.[0]?.price) ?? 0) * 1.2).toFixed(0)}
                             </span>
                           </div>
                           <button

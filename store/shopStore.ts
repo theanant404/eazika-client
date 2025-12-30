@@ -198,7 +198,9 @@ const updateStockData = async (
     products: {
       ...state.products,
       products: state.products.products.map((p) =>
-        p.id === productId ? { ...p, stock: pricing } : p
+        p.id === productId
+          ? { ...p, stock: typeof pricing?.stock === "number" ? pricing.stock : p.stock }
+          : p
       ),
     },
   }));

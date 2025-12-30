@@ -56,33 +56,30 @@ interface Pagination {
   totalItems: number;
   totalPages: number;
 }
-type ShopProduct =
-  | {
-    isGlobalProduct: false;
-    globalProductId?: never;
-    id: number | string;
-    category: string;
-    name: string;
-    brand: string;
-    description?: string;
-    images: string[];
-    rating: number;
-    pricing: ProductPriceType[];
-    isActive: boolean;
-  }
-  | {
-    isGlobalProduct: true;
-    id: number | string;
-    globalProductId: number | string;
-    category: string;
-    name: string;
-    brand: string;
-    description?: string;
-    images: string[];
-    rating: number;
-    pricing: ProductPriceType[];
-    isActive: boolean;
-  };
+type ShopProduct = {
+  id: number | string;
+  name: string;
+  description?: string;
+  images: string[];
+  stock?: number;
+  isActive: boolean;
+  isGlobal?: boolean;
+  isGlobalProduct?: boolean;
+  globalProductId?: number | string;
+  category?: string;
+  brand?: string;
+  price?: number;
+  prices?: Array<{
+    id?: number;
+    price?: number;
+    discount?: number;
+    weight?: number;
+    unit?: string;
+    currency?: string;
+  }>;
+  rating?: number | { rate?: number; count?: number };
+  isTrending?: boolean;
+};
 
 interface GlobalProduct {
   id: number | string;
@@ -153,4 +150,5 @@ export {
   GlobalProductListType,
   OrderDetail,
   CurrentOrderListType,
+  ShopProduct,
 };

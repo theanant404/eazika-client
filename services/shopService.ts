@@ -55,21 +55,21 @@ export interface UpdateProductPayload extends Partial<NewProductFormData> {
 }
 
 export interface ShopProduct {
-  data: {
-    id: number;
-    name: string;
-    description: string;
-    images: string[];
-    stock: number;
-    isActive: boolean;
-    isGlobal: boolean;
-    category: string;
-    price: number;
-    prices?: ProductPrice[];
-    rating?: number;
-    isTrending?: boolean;
-  }
-
+  id: number | string;
+  name: string;
+  description?: string;
+  images: string[];
+  stock?: number;
+  isActive: boolean;
+  isGlobal?: boolean;
+  isGlobalProduct?: boolean;
+  globalProductId?: number | string;
+  category?: string;
+  brand?: string;
+  price?: number;
+  prices?: ProductPrice[];
+  rating?: number | { rate?: number; count?: number };
+  isTrending?: boolean;
 }
 
 export interface ShopOrder {
@@ -333,7 +333,8 @@ export const ShopService = {
         `/customers/products/${id}`
       );
       // console.log("Fetched product:", response.data.data);
-      return response.data.data;
+      const product = (response.data as any)?.data || response.data;
+      return product as ShopProduct;
     } catch (error) {
       console.warn(`Product ${id} not found. Returning placeholder.`, error);
     }
@@ -341,7 +342,7 @@ export const ShopService = {
 
   getTrendingProducts: async () => {
     const response = await axios.get<ShopProduct[]>("/products/trending");
-    return response.data;
+    return response.data as unknown as ShopProduct[];
   },
 
   getGlobalCatalog: async (): Promise<ShopProduct[]> => {

@@ -86,10 +86,10 @@ export default function WishlistPage() {
 
         const normalizedProducts = results
           .map(normalizeProduct)
-          .filter((p): p is WishlistProduct => p !== null && p.name !== "Product Not Found");
+          .filter((p: WishlistProduct | null): p is WishlistProduct => p !== null && p.name !== "Product Not Found");
 
         const uniqueProductsMap = new Map<number, WishlistProduct>();
-        normalizedProducts.forEach((p) => uniqueProductsMap.set(p.id, p));
+        normalizedProducts.forEach((p: WishlistProduct) => uniqueProductsMap.set(p.id, p));
 
         setWishlistProducts(Array.from(uniqueProductsMap.values()));
       } catch (error) {

@@ -1,5 +1,33 @@
 import { create } from 'zustand';
-import { ShopService, ShopProduct } from '@/services/shopService';
+import { ShopService } from '@/services/shopService';
+import type { ShopProduct } from '@/types/shop';
+
+const normalizeProducts = (list: any[]): ShopProduct[] => {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((item) => {
+      const product = (item as any)?.product || (item as any)?.data || item;
+      if (!product) return null;
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        images: Array.isArray(product.images) ? product.images : [],
+        stock: product.stock,
+        isActive: product.isActive !== false,
+        isGlobal: product.isGlobal,
+        isGlobalProduct: product.isGlobalProduct,
+        globalProductId: product.globalProductId,
+        category: product.category,
+        brand: product.brand,
+        price: product.price,
+        prices: Array.isArray(product.prices) ? product.prices : undefined,
+        rating: product.rating,
+        isTrending: product.isTrending,
+      } as ShopProduct;
+    })
+    .filter((p): p is ShopProduct => !!p && p.id !== undefined && p.name !== undefined);
+};
 import { ProductPriceType } from '@/types/shop';
 
 interface ShopProductState {
@@ -32,14 +60,14 @@ export const useShopProductStore = create<ShopProductState>((set, get) => ({
     try {
       let data: ShopProduct[] = [];
       if (activeTab === 'inventory') {
-        data = await ShopService.getInventory();
+        data = normalizeProducts(await ShopService.getInventory());
       } else if (activeTab === 'global') {
-        data = await ShopService.getGlobalCatalog();
+        data = normalizeProducts(await ShopService.getGlobalCatalog());
       } else if (activeTab === 'my_products') {
         // In a real app, this might be a separate endpoint. 
         // Here we filter inventory for custom items (assuming isGlobal=false means custom)
-        const inventory = await ShopService.getInventory();
-        data = inventory.filter(p => !p.isGlobal);
+        const inventory = normalizeProducts(await ShopService.getInventory());
+        data = inventory.filter(p => !p.isGlobal && !p.isGlobalProduct);
       }
       set({ products: data });
     } catch (error) {
@@ -67,9 +95,9 @@ export const useShopProductStore = create<ShopProductState>((set, get) => ({
       if (priceVariant) {
         const pricePayload: ProductPriceType = {
           id: priceVariant.id,
-          price: priceVariant.price,
+          price: priceVariant.price ?? 0,
           discount: priceVariant.discount ?? 0,
-          weight: priceVariant.weight,
+          weight: priceVariant.weight ?? 0,
           unit: (priceVariant.unit as ProductPriceType['unit']) ?? 'grams',
           currency: priceVariant.currency,
           stock: newStock,
