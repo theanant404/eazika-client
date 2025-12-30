@@ -37,7 +37,7 @@ export default function ShopDashboard() {
         const analyticsData = await shopService
           .getAnalytics("all")
           .catch(() => null);
-        console.log("Analytics Data:", analyticsData);
+        // console.log("Analytics Data:", analyticsData);
         // Set Analytics
         if (analyticsData?.metrics) {
           setAnalytics(analyticsData.metrics);

@@ -89,7 +89,7 @@ export default function ShopOrdersPage() {
       order.id.toString().includes(searchQuery) ||
       order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  console.log(orders);
+  // console.log(orders);
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden pb-20">
       {/* Header */}

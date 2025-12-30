@@ -120,7 +120,7 @@ export default function ShopSettingsPage() {
             if (user && user.id) {
                 try {
                     const shopDetails = await ShopService.getShopProfile();
-                    console.log(shopDetails);
+                    // console.log(shopDetails);
                     const data = (shopDetails as { data?: ShopProfile } | ShopProfile | null) || null;
                     const normalized = data && typeof data === "object" && "data" in data ? (data as { data?: ShopProfile }).data : data;
                     setShopProfile(normalized ?? null);
