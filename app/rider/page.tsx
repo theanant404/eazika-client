@@ -96,6 +96,16 @@ export default function DeliveryHomePage() {
     return distances;
   }, [riderLocation, orders]);
 
+  const groupedOrders = useMemo(() => {
+    const groups: Record<string, { userId: number | null; orders: typeof orders }> = {};
+    orders.forEach((order) => {
+      const key = order.userId ? String(order.userId) : `unknown-${order.id}`;
+      if (!groups[key]) groups[key] = { userId: order.userId ?? null, orders: [] } as any;
+      groups[key].orders.push(order);
+    });
+    return Object.values(groups);
+  }, [orders]);
+
   useEffect(() => {
     (async () => {
       if (!activeOrder) await fetchOrders();
@@ -126,11 +136,14 @@ export default function DeliveryHomePage() {
     );
   };
 
-  const handleStart = () => {
+  const [pendingGroup, setPendingGroup] = useState<typeof orders | null>(null);
+
+  const handleStart = (groupOrders: typeof orders) => {
     if (!riderLocation) {
       toast.error("Please enable location access first by clicking 'Check Distance'");
       return;
     }
+    setPendingGroup(groupOrders);
     setShowStartModal(true);
   };
 
@@ -139,8 +152,9 @@ export default function DeliveryHomePage() {
   };
 
   const confirmStart = () => {
-    startSession();
+    startSession(pendingGroup ?? undefined);
     setShowStartModal(false);
+    setPendingGroup(null);
     router.push("/rider/map");
   };
   // console.log(orders)
@@ -239,76 +253,96 @@ export default function DeliveryHomePage() {
 
             {orders.length > 0 ? (
               <>
-                <div className="space-y-3">
-                  {orders.map((order, index) => (
-                    <div
-                      key={order.id}
-                      className="bg-gray-800 rounded-xl p-4 border border-gray-700 flex items-center gap-4"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                        {index + 1}
+                <div className="space-y-4">
+                  {groupedOrders.map((group, groupIndex) => (
+                    <div key={group.userId ?? groupIndex} className="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">Customer</p>
+                          <h3 className="text-lg font-semibold text-white">
+                            {group.orders[0]?.address?.name || `User #${group.userId ?? "N/A"}`}
+                          </h3>
+                          {group.orders[0]?.address?.phone && (
+                            <p className="text-xs text-gray-500">{group.orders[0].address.phone}</p>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Orders: {group.orders.length}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0 space-y-0.5">
-                        <p className="text-gray-200 font-semibold text-sm truncate">
-                          {order.address?.name || "Unnamed Location"}
-                        </p>
-                        <p className="text-gray-400 text-[11px] truncate">
-                          Order #{order.id}
-                        </p>
-                        <p className="text-gray-300 text-xs truncate">
-                          Deliver to: {order.address?.line1 || order.address?.street || "Unknown Address"}
-                        </p>
-                        {(order.address?.city || order.address?.pinCode) && (
-                          <p className="text-gray-400 text-[11px] truncate">
-                            {order.address?.city}
-                            {order.address?.city && order.address?.pinCode ? ", " : ""}
-                            {order.address?.pinCode}
-                          </p>
-                        )}
-                        {order.address?.phone && (
-                          <p className="text-gray-500 text-[11px] truncate">
-                            Contact: {order.address.phone}
-                          </p>
-                        )}
-                        <p className="text-gray-300 text-xs truncate">
-                          Items: {order.totalProducts} {order.totalProducts === 1 ? "item" : "items"}
-                        </p>
-                        <p className="text-gray-100 text-sm font-bold">
-                          ₹{order.totalAmount}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        {orderDistances[order.id] !== undefined ? (
-                          <div className="text-yellow-500 text-sm font-bold">
-                            {orderDistances[order.id]} km
-                          </div>
-                        ) : (
-                          <button
-                            onClick={getRiderCurrentLocation}
-                            disabled={isLoadingLocation}
-                            className="text-yellow-500 text-xs font-bold hover:text-yellow-400 transition-colors disabled:opacity-50 flex items-center gap-1"
+
+                      <div className="space-y-3">
+                        {group.orders.map((order, index) => (
+                          <div
+                            key={order.id}
+                            className="bg-gray-800 rounded-xl p-4 border border-gray-700 flex items-center gap-4"
                           >
-                            {isLoadingLocation ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              "Check Distance"
-                            )}
-                          </button>
-                        )}
+                            <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-0.5">
+                              <p className="text-gray-200 font-semibold text-sm truncate">
+                                {order.address?.name || "Unnamed Location"}
+                              </p>
+                              <p className="text-gray-400 text-[11px] truncate">
+                                Order #{order.id}
+                              </p>
+                              <p className="text-gray-300 text-xs truncate">
+                                Deliver to: {order.address?.line1 || order.address?.street || "Unknown Address"}
+                              </p>
+                              {(order.address?.city || order.address?.pinCode) && (
+                                <p className="text-gray-400 text-[11px] truncate">
+                                  {order.address?.city}
+                                  {order.address?.city && order.address?.pinCode ? ", " : ""}
+                                  {order.address?.pinCode}
+                                </p>
+                              )}
+                              {order.address?.phone && (
+                                <p className="text-gray-500 text-[11px] truncate">
+                                  Contact: {order.address.phone}
+                                </p>
+                              )}
+                              <p className="text-gray-300 text-xs truncate">
+                                Items: {order.totalProducts} {order.totalProducts === 1 ? "item" : "items"}
+                              </p>
+                              <p className="text-gray-100 text-sm font-bold">
+                                ₹{order.totalAmount}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              {orderDistances[order.id] !== undefined ? (
+                                <div className="text-yellow-500 text-sm font-bold">
+                                  {orderDistances[order.id]} km
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={getRiderCurrentLocation}
+                                  disabled={isLoadingLocation}
+                                  className="text-yellow-500 text-xs font-bold hover:text-yellow-400 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                >
+                                  {isLoadingLocation ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                  ) : (
+                                    "Check Distance"
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          onClick={() => handleStart(group.orders)}
+                          disabled={!riderLocation}
+                          className="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 rounded-xl shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Play size={18} fill="currentColor" /> Start Delivery Run for this customer
+                        </button>
                       </div>
                     </div>
                   ))}
-                </div>
-
-                {/* Start Button */}
-                <div className="fixed bottom-20 left-4 right-4 md:static md:mt-6">
-                  <button
-                    onClick={handleStart}
-                    disabled={!riderLocation}
-                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-4 rounded-2xl shadow-xl shadow-yellow-500/20 flex items-center justify-center gap-2 text-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Play size={22} fill="currentColor" /> Start Delivery Run
-                  </button>
                 </div>
               </>
             ) : (
@@ -327,7 +361,9 @@ export default function DeliveryHomePage() {
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-white text-gray-900 w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4">
             <h3 className="text-lg font-bold">Start Delivery Run</h3>
-            <p className="text-sm text-gray-600">Resume navigation to the rider map?</p>
+            <p className="text-sm text-gray-600">
+              Start navigation for {pendingGroup?.length || 0} order(s) from this customer?
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowStartModal(false)}

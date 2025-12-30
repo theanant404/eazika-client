@@ -15,7 +15,7 @@ interface DeliveryState {
   fetchHistory: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateProfile: (data: UpdateDeliveryProfilePayload) => Promise<void>;
-  startSession: () => void;
+  startSession: (ordersOverride?: DeliveryOrder[]) => void;
   completeCurrentOrder: (otp: string) => Promise<boolean>;
   toggleOnline: () => Promise<void>; // New Action
 }
@@ -94,11 +94,12 @@ export const useDeliveryStore = create<DeliveryState>((set, get) => ({
     }
   },
 
-  startSession: () => {
+  startSession: (ordersOverride) => {
     const { orders } = get();
-    if (orders.length === 0) return;
+    const list = ordersOverride && ordersOverride.length > 0 ? ordersOverride : orders;
+    if (list.length === 0) return;
 
-    const sortedQueue = [...orders].sort((a, b) => a.id - b.id);
+    const sortedQueue = [...list].sort((a, b) => a.id - b.id);
 
     set({
       isSessionActive: true,
