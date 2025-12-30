@@ -32,6 +32,36 @@ const STEPS = [
     { id: 4, title: "Done", icon: CheckCircle },
 ];
 
+const DEFAULT_ADDRESS: NonNullable<CreateShopPayload["address"]> = {
+    name: "",
+    phone: "",
+    line1: "",
+    line2: "",
+    street: "",
+    country: "India",
+    state: "Maharashtra",
+    city: "",
+    pinCode: "",
+    geoLocation: "",
+};
+
+const DEFAULT_DOCUMENTS: CreateShopPayload["documents"] = {
+    aadharImage: "",
+    electricityBillImage: "",
+    businessCertificateImage: "",
+    panImage: "",
+};
+
+const EMPTY_FORM: CreateShopPayload = {
+    shopName: "",
+    shopCategory: "",
+    shopImages: [],
+    fssaiNumber: "",
+    gstNumber: "",
+    address: DEFAULT_ADDRESS,
+    documents: DEFAULT_DOCUMENTS,
+};
+
 export default function ShopRegistrationContent() {
     const router = useRouter();
     const user = userStore((state) => state.user);
@@ -40,70 +70,125 @@ export default function ShopRegistrationContent() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const [formData, setFormData] = useState<CreateShopPayload>({
-        shopName: "",
-        shopCategory: "",
-        shopImages: [],
-        fssaiNumber: "",
-        gstNumber: "",
-        address: {
-            name: user?.name || "",
-            phone: user?.phone || "",
-            line1: "",
-            street: "",
-            country: "India",
-            state: "Maharashtra",
-            city: "",
-            pinCode: "",
-            geoLocation: "",
-        },
-        documents: {
-            aadharImage: "",
-            electricityBillImage: "",
-            businessCertificateImage: "",
-            panImage: "",
-        },
+    const [formData, setFormData] = useState<CreateShopPayload>(EMPTY_FORM);
+    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasRequestedLocation = useRef(false);
+
+    const normalizeAddress = (
+        address?: Partial<NonNullable<CreateShopPayload["address"]>>
+    ): NonNullable<CreateShopPayload["address"]> => ({
+        name: address?.name ?? DEFAULT_ADDRESS.name,
+        phone: address?.phone ?? DEFAULT_ADDRESS.phone,
+        line1: address?.line1 ?? DEFAULT_ADDRESS.line1,
+        line2: address?.line2 ?? DEFAULT_ADDRESS.line2,
+        street: address?.street ?? DEFAULT_ADDRESS.street,
+        country: address?.country ?? DEFAULT_ADDRESS.country,
+        state: address?.state ?? DEFAULT_ADDRESS.state,
+        city: address?.city ?? DEFAULT_ADDRESS.city,
+        pinCode: address?.pinCode ?? DEFAULT_ADDRESS.pinCode,
+        geoLocation: address?.geoLocation ?? DEFAULT_ADDRESS.geoLocation,
+    });
+
+    const normalizeDocuments = (
+        docs?: Partial<CreateShopPayload["documents"]>
+    ): CreateShopPayload["documents"] => ({
+        aadharImage: docs?.aadharImage ?? DEFAULT_DOCUMENTS.aadharImage,
+        electricityBillImage:
+            docs?.electricityBillImage ?? DEFAULT_DOCUMENTS.electricityBillImage,
+        businessCertificateImage:
+            docs?.businessCertificateImage ?? DEFAULT_DOCUMENTS.businessCertificateImage,
+        panImage: docs?.panImage ?? DEFAULT_DOCUMENTS.panImage,
     });
 
     useEffect(() => {
         // Load saved data from localStorage if available
-        const savedData = localStorage.getItem("shopRegData");
-        if (savedData) setFormData(JSON.parse(savedData));
+        const savedData = typeof window !== "undefined" ? localStorage.getItem("shopRegData") : null;
+
+        if (savedData) {
+            try {
+                const parsed: CreateShopPayload = JSON.parse(savedData);
+
+                setFormData((prev) => {
+                    const mergedAddress = normalizeAddress({
+                        ...prev.address,
+                        ...parsed.address,
+                    });
+
+                    const mergedDocuments = normalizeDocuments({
+                        ...prev.documents,
+                        ...parsed.documents,
+                    });
+
+                    return {
+                        ...EMPTY_FORM,
+                        ...prev,
+                        ...parsed,
+                        address: mergedAddress,
+                        documents: mergedDocuments,
+                    };
+                });
+            } catch (error) {
+                console.warn("Corrupt shopRegData in storage", error);
+                localStorage.removeItem("shopRegData");
+            }
+        }
+
         if (!user) fetchUser();
     }, [fetchUser, user]);
+
+    // Ask for location permission early on step 1
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (currentStep === 1 && !hasRequestedLocation.current) {
+            hasRequestedLocation.current = true;
+            handleUseCurrentLocation();
+        }
+    }, [currentStep]);
 
     // When user info arrives, prefill and lock phone
     useEffect(() => {
         if (user?.phone) {
-            setFormData((prev) => ({
-                ...prev,
-                address: {
-                    name: prev.address?.name ?? "",
-                    phone: user.phone,
-                    line1: prev.address?.line1 ?? "",
-                    line2: prev.address?.line2 ?? "",
-                    street: prev.address?.street ?? "",
-                    country: prev.address?.country ?? "India",
-                    state: prev.address?.state ?? "",
-                    city: prev.address?.city ?? "",
-                    pinCode: prev.address?.pinCode ?? "",
-                    geoLocation: prev.address?.geoLocation ?? "",
-                },
-            }));
-        }
-    }, [user?.phone]);
+            setFormData((prev) => {
+                const normalized = normalizeAddress(prev.address);
 
-    const updateForm = (field: string, value: string | string[]) => {
+                return {
+                    ...prev,
+                    address: {
+                        ...normalized,
+                        name: normalized.name || user.name || "",
+                        phone: user.phone,
+                    },
+                };
+            });
+        }
+    }, [user?.phone, user?.name]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        if (saveTimer.current) {
+            clearTimeout(saveTimer.current);
+        }
+
+        saveTimer.current = setTimeout(() => {
+            localStorage.setItem("shopRegData", JSON.stringify(formData));
+        }, 300);
+
+        return () => {
+            if (saveTimer.current) clearTimeout(saveTimer.current);
+        };
+    }, [formData]);
+
+    const updateForm = (field: keyof CreateShopPayload, value: string | string[]) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const updateNestedForm = (
-        section: "address" | "documents",
-        field: CreateShopPayload["address" | "documents"] extends infer T
-            ? T extends object
-            ? keyof T
-            : never
-            : never,
+    type NestedSection = "address" | "documents";
+    type NestedKey<S extends NestedSection> = keyof NonNullable<CreateShopPayload[S]>;
+
+    const updateNestedForm = <S extends NestedSection>(
+        section: S,
+        field: NestedKey<S>,
         value: string
     ) => {
         setFormData((prev) => ({
@@ -161,13 +246,12 @@ export default function ShopRegistrationContent() {
     };
 
     const handleNext = () => {
-        if (validateStep(currentStep)) {
-            if (currentStep < 4) {
-                setCurrentStep((curr) => curr + 1);
-                localStorage.setItem("shopRegData", JSON.stringify(formData));
-                if (currentStep === 2 && formData.address?.geoLocation == "") {
-                    handleUseCurrentLocation();
-                }
+        if (!validateStep(currentStep)) return;
+
+        if (currentStep < 4) {
+            setCurrentStep((curr) => curr + 1);
+            if (currentStep === 2 && formData.address?.geoLocation === "") {
+                handleUseCurrentLocation();
             }
         }
     };
@@ -281,7 +365,10 @@ export default function ShopRegistrationContent() {
 
     // STEP 3: Use Current Location Button Handler
     const handleUseCurrentLocation = () => {
-        if (!navigator.geolocation) return;
+        if (typeof navigator === "undefined" || !navigator.geolocation) {
+            toast.error("Geolocation is not available on this device.");
+            return;
+        }
         setIsLoading(true);
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
@@ -341,14 +428,14 @@ export default function ShopRegistrationContent() {
                 }`; // 7 days
             toast.success("Application Submitted! We will review your details.");
             localStorage.removeItem("shopRegData"); // Clear saved data
-            setInterval(() => router.push("/shop"), 1500); // Redirect after 1.5s
+            setTimeout(() => router.push("/shop"), 1500); // Redirect after 1.5s
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <main className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden w-full border border-gray-100 dark:border-gray-700 flex flex-col h-[600px] md:h-[650px]">
+        <main className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden w-full border border-gray-100 dark:border-gray-700 flex flex-col">
             {/* Header */}
 
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-center relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0">
@@ -372,18 +459,18 @@ export default function ShopRegistrationContent() {
                 <div className="relative flex items-center justify-between w-full">
 
                     {/* Background Track (Grey Line) */}
-                    <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-200 dark:bg-gray-800 -translate-y-1/2 z-0" />
+                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 dark:bg-gray-800 -translate-y-1/2 z-0" />
 
                     {/* Animated Active Track (Yellow Line) */}
                     <motion.div
-                        className="absolute top-1/2 left-0 h-[2px] bg-yellow-500 z-0 -translate-y-1/2 origin-left"
+                        className="absolute top-1/2 left-0 h-0.5 bg-yellow-500 z-0 -translate-y-1/2 origin-left"
                         initial={{ width: "0%" }}
                         animate={{ width: `${(currentStep - 1) / (STEPS.length - 1) * 100}%` }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                     />
 
                     {/* Step Nodes */}
-                    {STEPS.map((step, index) => {
+                    {STEPS.map((step) => {
                         const isCompleted = step.id < currentStep;
                         const isActive = step.id === currentStep;
 
@@ -801,82 +888,3 @@ export default function ShopRegistrationContent() {
         </main>
     );
 }
-
-
-
-type StepDef = {
-    id: number;
-    title: string;
-    description?: string;
-    icon?: React.ComponentType<{ size?: number; className?: string }> | null;
-};
-
-const Stepper = ({ currentStep, STEPS }: { currentStep: number; STEPS: StepDef[] }) => {
-    const totalSteps = STEPS.length;
-    // Calculate progress width: (completed gaps / total gaps)
-    const progressWidth = ((currentStep - 1) / (totalSteps - 1)) * 100;
-
-    return (
-        <div className="w-full px-8 py-6">
-            <div className="relative flex items-center justify-between w-full">
-
-                {/* Background Track (Grey Line) */}
-                <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-200 dark:bg-gray-800 -translate-y-1/2 z-0" />
-
-                {/* Animated Active Track (Yellow Line) */}
-                <motion.div
-                    className="absolute top-1/2 left-0 h-[2px] bg-yellow-500 z-0 -translate-y-1/2 origin-left"
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${progressWidth}%` }}
-                    transition={{ duration: 0.4, ease: "easeInOut" }}
-                />
-
-                {/* Step Nodes */}
-                {STEPS.map((step, index) => {
-                    const isCompleted = step.id < currentStep;
-                    const isActive = step.id === currentStep;
-
-                    return (
-                        <div key={step.id} className="relative z-10 flex flex-col items-center">
-                            {/* Icon Circle */}
-                            <motion.div
-                                initial={false}
-                                animate={{
-                                    scale: isActive ? 1.2 : 1,
-                                    backgroundColor: isActive || isCompleted ? "#eab308" : "#ffffff",
-                                    borderColor: isActive || isCompleted ? "#eab308" : "#d1d5db",
-                                }}
-                                className={cn(
-                                    "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-sm",
-                                    isActive ? "ring-4 ring-yellow-500/20" : ""
-                                )}
-                            >
-                                {step.icon ? (
-                                    <step.icon
-                                        size={18}
-                                        className={cn(
-                                            "transition-colors",
-                                            isActive || isCompleted ? "text-white" : "text-gray-400"
-                                        )}
-                                    />
-                                ) : null}
-                            </motion.div>
-
-                            {/* Label - Fixed Positioning to prevent shifting */}
-                            <div className="absolute top-10 flex flex-col items-center w-max">
-                                <span
-                                    className={cn(
-                                        "text-[10px] uppercase tracking-wider font-black transition-colors duration-300",
-                                        isActive || isCompleted ? "text-yellow-600 dark:text-yellow-500" : "text-gray-400"
-                                    )}
-                                >
-                                    {step.title}
-                                </span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
