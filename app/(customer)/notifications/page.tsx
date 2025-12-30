@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { userService } from "@/services/userService";
+import { notificationService } from "@/services/notificationService";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -30,7 +31,8 @@ export default function NotificationsPage() {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const data = (await userService.getNotifications()) as Notification[];
+        const data = (await notificationService.getNotifications()) as Notification[];
+        console.log(data);
         // Sort by date descending
         const sorted = data.sort(
           (a, b) =>
@@ -116,11 +118,10 @@ export default function NotificationsPage() {
                   onClick={() =>
                     !notification.isRead && handleMarkRead(notification.id)
                   }
-                  className={`relative p-4 rounded-2xl border transition-all cursor-pointer ${
-                    notification.isRead
-                      ? "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
-                      : "bg-white dark:bg-gray-800 border-l-4 border-l-yellow-500 border-y-gray-100 dark:border-y-gray-700 border-r-gray-100 dark:border-r-gray-700 shadow-sm"
-                  }`}
+                  className={`relative p-4 rounded-2xl border transition-all cursor-pointer ${notification.isRead
+                    ? "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
+                    : "bg-white dark:bg-gray-800 border-l-4 border-l-yellow-500 border-y-gray-100 dark:border-y-gray-700 border-r-gray-100 dark:border-r-gray-700 shadow-sm"
+                    }`}
                 >
                   <div className="flex gap-4">
                     <div
@@ -133,11 +134,10 @@ export default function NotificationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <h3
-                          className={`text-sm font-bold ${
-                            notification.isRead
-                              ? "text-gray-700 dark:text-gray-300"
-                              : "text-gray-900 dark:text-white"
-                          }`}
+                          className={`text-sm font-bold ${notification.isRead
+                            ? "text-gray-700 dark:text-gray-300"
+                            : "text-gray-900 dark:text-white"
+                            }`}
                         >
                           {notification.title}
                         </h3>
@@ -149,11 +149,10 @@ export default function NotificationsPage() {
                         </span>
                       </div>
                       <p
-                        className={`text-xs leading-relaxed ${
-                          notification.isRead
-                            ? "text-gray-500 dark:text-gray-500"
-                            : "text-gray-600 dark:text-gray-300 font-medium"
-                        }`}
+                        className={`text-xs leading-relaxed ${notification.isRead
+                          ? "text-gray-500 dark:text-gray-500"
+                          : "text-gray-600 dark:text-gray-300 font-medium"
+                          }`}
                       >
                         {notification.message}
                       </p>

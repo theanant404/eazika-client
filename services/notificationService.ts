@@ -45,6 +45,11 @@ export const notificationService = {
         const response = await axios.post("/notifications/push/send/all", payload);
         return response.data;
     },
+    getNotifications: async (): Promise<any[]> => {
+        const response = await axios.get("/notifications/all");
+        return response.data.data;
+    }
+
 };
 
 export default notificationService;

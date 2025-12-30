@@ -132,6 +132,7 @@ export const userService = {
   // // --- ADDED: NOTIFICATIONS ---
   getNotifications: async () => {
     const response = await axios.get("/users/notifications");
+    console.log("Notifications Response:", response);
     return response.data;
   },
 
