@@ -122,8 +122,11 @@ export default function ShopSettingsPage() {
                     const shopDetails = await ShopService.getShopProfile();
                     // console.log(shopDetails);
                     const data = (shopDetails as { data?: ShopProfile } | ShopProfile | null) || null;
-                    const normalized = data && typeof data === "object" && "data" in data ? (data as { data?: ShopProfile }).data : data;
-                    setShopProfile(normalized ?? null);
+                    const normalized: ShopProfile | null =
+                        data && typeof data === "object" && "data" in data
+                            ? (data as { data?: ShopProfile }).data ?? null
+                            : (data as ShopProfile | null);
+                    setShopProfile(normalized);
                 } catch (err) {
                     console.warn("Failed to fetch shop address by user ID", err);
                 }
