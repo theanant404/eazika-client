@@ -68,7 +68,7 @@ export default function CheckoutPage() {
       if (isAxiosError(error)) {
         toast.error(
           error.response?.data?.message ||
-            "Failed to place order. Please try again."
+          "Failed to place order. Please try again."
         );
       } else if (error instanceof Error) {
         toast.error(error.message);
