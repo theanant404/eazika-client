@@ -115,6 +115,8 @@ type OrderItem = {
 
 type OrderDetail = {
   id: number | string;
+  customerId?: number;
+  userId?: number;
   customerName: string;
   customerPhone: string;
   address: string;
@@ -126,6 +128,7 @@ type OrderDetail = {
   orderItems: OrderItem[];
   driver?: { id: number | string; name: string; phone: string };
   driverList: { id: number | string; name: string; phone: string }[];
+  user?: { id: number; phone?: string };
 };
 
 interface CurrentOrderListType {

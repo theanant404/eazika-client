@@ -14,10 +14,10 @@ self.addEventListener("push", function (event) {
   const title = payload.title || "Notification";
   const options = {
     body: payload.body || "",
-    data: payload.url || "/",
+    data: payload.url || payload.data?.url || "/",
     // you can add icon, badge, actions, etc.
-    icon: "/icon.png",
-    badge: "/badge.png",
+    icon: payload.icon || "/icon.png",
+    badge: payload.badge || "/badge.png",
   };
 
   event.waitUntil(self.registration.showNotification(title, options));

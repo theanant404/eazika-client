@@ -16,21 +16,29 @@ export interface SendNotificationPayload {
     url?: string;
     data?: Record<string, any>;
 }
+type VapidKeyResponse = {
+    publicKey: string;
+};
 
 export const notificationService = {
     /** Fetch the VAPID public key for the client to register a push subscription. */
-    getVapidPublicKey: async (): Promise<string> => {
-        const response = await axios.post<{ data?: string; key?: string; vapidPublicKey?: string }>(
+    getVapidPublicKey: async (): Promise<VapidKeyResponse> => {
+        const response = await axios.post<{ data?: string; key?: string; publicKey?: string }>(
             "/notifications/push/vapid-public-key"
         );
-        return (
-            response.data?.data || response.data?.key || response.data?.vapidPublicKey || ""
-        );
+        const publicKey =
+            response.data?.data ||
+            response.data?.publicKey ||
+            response.data?.key ||
+            "";
+        return { publicKey };
     },
 
     /** Register a push subscription for the current user. */
     subscribe: async (subscription: PushSubscriptionPayload) => {
+        console.log("Subscribing with payload:", subscription);
         const response = await axios.post("/notifications/push/subscribe", subscription);
+        console.log("Subscription response:", response);
         return response.data;
     },
 
@@ -48,8 +56,11 @@ export const notificationService = {
     getNotifications: async (): Promise<any[]> => {
         const response = await axios.get("/notifications/all");
         return response.data.data;
-    }
-
+    },
+    markNotificationRead: async (notificationId: number): Promise<void> => {
+        const response = await axios.patch(`/notifications/mark-read/${notificationId}/read`);
+        return response.data;
+    },
 };
 
 export default notificationService;

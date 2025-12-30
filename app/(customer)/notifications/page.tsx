@@ -3,10 +3,19 @@
 export interface Notification {
   id: number;
   title: string;
-  message: string;
-  type: "order" | "promo" | "system" | "alert";
+  message?: string;
+  body?: string;
+  type?: "order" | "promo" | "system" | "alert";
+  url?: string;
+  data?: string | object;
   isRead: boolean;
   createdAt: string;
+  sender?: {
+    id: number;
+    name?: string;
+    phone?: string;
+    role?: string;
+  };
 }
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -32,9 +41,14 @@ export default function NotificationsPage() {
     const fetchNotifications = async () => {
       try {
         const data = (await notificationService.getNotifications()) as Notification[];
-        console.log(data);
+        // Normalize notifications: use body as message if message is missing
+        const normalized = data.map((n) => ({
+          ...n,
+          message: n.message || n.body || "",
+          type: n.type || "order",
+        }));
         // Sort by date descending
-        const sorted = data.sort(
+        const sorted = normalized.sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
@@ -48,12 +62,15 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, []);
 
-  const handleMarkRead = async (id: number) => {
+  const handleMarkRead = async (id: number, url?: string) => {
     // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
-    await userService.markNotificationRead(id);
+    await notificationService.markNotificationRead(id);
+    if (url) {
+      router.push(url);
+    }
   };
 
   const getIcon = (type: string) => {
@@ -115,8 +132,9 @@ export default function NotificationsPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
+
                   onClick={() =>
-                    !notification.isRead && handleMarkRead(notification.id)
+                    !notification.isRead && handleMarkRead(notification.id, notification.url)
                   }
                   className={`relative p-4 rounded-2xl border transition-all cursor-pointer ${notification.isRead
                     ? "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
@@ -126,10 +144,10 @@ export default function NotificationsPage() {
                   <div className="flex gap-4">
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getBgColor(
-                        notification.type
+                        notification.type ?? "order"
                       )}`}
                     >
-                      {getIcon(notification.type)}
+                      {getIcon(notification.type ?? "order")}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">

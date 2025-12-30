@@ -18,6 +18,7 @@ import {
 import { shopService } from "@/services/shopService";
 import { OrderDetail } from "@/types/shop";
 import { cn } from "@/lib/utils";
+import notificationService from "@/services/notificationService";
 
 const parseGeo = (geo?: string | { lat?: number; lng?: number; latitude?: number; longitude?: number } | null) => {
   if (!geo) return null;
@@ -75,6 +76,36 @@ export default function ShopOrderDetailsPage({
   const [selectedRider, setSelectedRider] = useState<
     OrderDetail["driver"] | null
   >(null);
+
+  const notifyUser = async (
+    currentOrder: OrderDetail,
+    payload: { title: string; body: string }
+  ) => {
+    const targetUserIdRaw =
+      (currentOrder as any)?.userId ??
+      (currentOrder as any)?.customerId ??
+      (currentOrder as any)?.user?.id;
+    const directId =
+      typeof targetUserIdRaw === "string"
+        ? Number(targetUserIdRaw)
+        : targetUserIdRaw;
+
+
+    const userIdToNotify = '6'
+    if (userIdToNotify) {
+      try {
+        await notificationService.sendToUser(userIdToNotify, {
+          ...payload,
+          icon: "/icon.png",
+          url: `/orders/track-order/${currentOrder.id}`,
+        });
+      } catch (err) {
+        console.warn("Notification send failed", err);
+      }
+    } else if (!userIdToNotify) {
+      console.warn("Skip notification: missing userId on order", currentOrder.id);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -135,6 +166,10 @@ export default function ShopOrderDetailsPage({
       await shopService.updateOrderStatus(order.id, "confirmed");
       setOrder({ ...order, status: "confirmed" });
       setOpenPopUp(null);
+      await notifyUser(order, {
+        title: "Order accepted",
+        body: `Your order #${order.id} has been accepted and is being prepared.`,
+      });
       toast.success("Order accepted successfully");
     } catch (error) {
       if (error instanceof Error) {
@@ -163,6 +198,10 @@ export default function ShopOrderDetailsPage({
       });
 
       setOpenPopUp(null);
+      await notifyUser(order, {
+        title: "Order is ready",
+        body: `Your order #${order.id} is ready and will be picked up by ${selectedRider.name || "the rider"}.`,
+      });
       toast.success("Rider assigned and order marked as ready");
     } catch (error) {
       if (error instanceof Error) {
@@ -285,8 +324,9 @@ export default function ShopOrderDetailsPage({
                       <Image
                         src={item.image}
                         alt={item.name}
-                        layout="fill"
-                        objectFit="cover"
+                        fill
+                        className="object-cover"
+                        sizes="64px"
                       />
                     </div>
                     <div className="flex-1">
