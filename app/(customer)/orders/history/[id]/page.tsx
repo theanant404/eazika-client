@@ -13,7 +13,6 @@ import {
   Printer,
 } from "lucide-react";
 import { cartMethods } from "@/services/customerService";
-import { products as mockProducts } from "@/app/data/mockData";
 import Image from "next/image";
 
 export interface Order {
@@ -29,7 +28,111 @@ export interface Order {
   cancelReason?: string;
   createdAt: string;
   updatedAt: string;
-  orderItems: any[];
+  orderItems: OrderItem[];
+  address?: OrderAddress;
+  deliveryBoy?: DeliveryBoy;
+}
+
+export interface OrderAddress {
+  id: number;
+  userId: number;
+  name: string;
+  phone: string;
+  line1: string;
+  line2?: string;
+  street?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  pinCode?: string;
+}
+
+export interface GlobalProduct {
+  id: number;
+  productCategoryId: number;
+  brand?: string | null;
+  name?: string | null;
+  description?: string | null;
+  images: string[];
+  isActive: boolean;
+}
+
+export interface ProductCategory {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+export interface Product {
+  id: number;
+  shopkeeperId: number;
+  productCategoryId: number;
+  globalProductId: number;
+  isGlobalProduct: boolean;
+  brand: string | null;
+  name: string | null;
+  description: string | null;
+  images: string[];
+  priceIds: number[];
+  stock: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  globalProduct?: GlobalProduct;
+  productCategories?: ProductCategory;
+}
+
+export interface PriceDetails {
+  id: number;
+  price: number;
+  discount?: number;
+  weight: number;
+  stock: number;
+  unit: string;
+  currency: string;
+  globalProductId?: number | null;
+  shopProductId?: number;
+}
+
+export interface OrderItem {
+  id: number;
+  productId: number;
+  priceId: number;
+  price: number;
+  weight: number;
+  unit: string;
+  quantity: number;
+  orderId: number;
+  shopProductId?: number;
+  product?: Product;
+  priceDetails?: PriceDetails;
+}
+
+export interface DeliveryBoy {
+  id: number;
+  userId: number;
+  shopkeeperId: number;
+  aadharNumber?: string;
+  panNumber?: string;
+  licenseNumber?: string;
+  licenseImage?: string[];
+  vehicleOwnerName?: string;
+  vehicleName?: string;
+  vehicleNo?: string;
+  currentLat?: number;
+  currentLng?: number;
+  isAvailable?: boolean;
+  isVerified?: boolean;
+  lastLocationUpdate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  user?: {
+    id: number;
+    name: string;
+    phone: string;
+    email?: string | null;
+    image?: string | null;
+  };
 }
 export default function OrderDetailsPage() {
   const params = useParams();
@@ -58,12 +161,6 @@ export default function OrderDetailsPage() {
 
     fetchOrderDetails();
   }, [orderId]);
-
-  const getProductDetails = (shopProductId: number) => {
-    return mockProducts.find(
-      (p) => parseInt(p.id.replace("p-", "")) === shopProductId
-    );
-  };
 
   const handleDownloadInvoice = () => {
     window.print();
@@ -149,20 +246,26 @@ export default function OrderDetailsPage() {
           </div>
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {order.orderItems.map((item) => {
-              const product = getProductDetails(item.shopProductId);
-              const displayPrice = product
-                ? product.price
-                : order.totalAmount / order.totalProducts;
+              const product = item.product;
+              const globalProduct = product?.globalProduct;
+              const displayName =
+                product?.name || globalProduct?.name || globalProduct?.brand ||
+                `Product #${item.productId}`;
+              const displayImage =
+                product?.images?.[0] || globalProduct?.images?.[0] || "";
+              const displayUnit = item.unit || item.priceDetails?.unit;
+              const displayWeight = item.weight || item.priceDetails?.weight;
+              const displayPrice = item.priceDetails?.price ?? item.price ?? 0;
 
               return (
                 <div key={item.id} className="p-4 flex gap-4">
                   <div className="relative w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-xl shrink-0 overflow-hidden print:hidden">
-                    {product ? (
+                    {displayImage ? (
                       <Image
-                        src={product.images[0]}
-                        alt={product.name}
-                        layout="fill"
-                        objectFit="cover"
+                        src={displayImage}
+                        alt={displayName || "Product"}
+                        fill
+                        className="object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
@@ -172,13 +275,21 @@ export default function OrderDetailsPage() {
                   </div>
                   <div className="flex-1">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
-                      {product
-                        ? product.name
-                        : `Product #${item.shopProductId}`}
+                      {displayName}
                     </h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Qty: {item.quantity}
-                    </p>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-1">
+                      <p>
+                        Qty: {item.quantity}
+                        {displayWeight && displayUnit
+                          ? ` • ${displayWeight}${displayUnit}`
+                          : ""}
+                      </p>
+                      {globalProduct?.brand ? (
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                          Brand: {globalProduct.brand}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-bold text-gray-900 dark:text-white">
@@ -198,11 +309,25 @@ export default function OrderDetailsPage() {
             <div className="flex items-center gap-2 mb-3 text-gray-500 dark:text-gray-400 text-sm font-medium">
               <MapPin size={16} className="print:hidden" /> Shipping Address
             </div>
-            <p className="text-sm text-gray-900 dark:text-white font-medium">
-              Home <br />
-              123, Civil Lines, <br />
-              Nagpur, Maharashtra - 440001
-            </p>
+            <div className="space-y-1 text-sm text-gray-900 dark:text-white font-medium">
+              <p>
+                {order.address?.name || "Customer"}
+                {order.address?.phone ? ` • ${order.address.phone}` : ""}
+              </p>
+              <p className="text-gray-700 dark:text-gray-200 font-normal leading-relaxed">
+                {[order.address?.line1, order.address?.line2, order.address?.street]
+                  .filter(Boolean)
+                  .join(", ") || "Address unavailable"}
+              </p>
+              <p className="text-gray-700 dark:text-gray-200 font-normal leading-relaxed">
+                {[order.address?.city, order.address?.state, order.address?.country]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+              {order.address?.pinCode ? (
+                <p className="text-gray-700 dark:text-gray-200 font-normal">PIN: {order.address.pinCode}</p>
+              ) : null}
+            </div>
           </div>
 
           {/* Payment Info */}
@@ -217,6 +342,12 @@ export default function OrderDetailsPage() {
                   {order.paymentMethod.replace(/_/g, " ")}
                 </span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-300">Status</span>
+                <span className="font-medium text-gray-900 dark:text-white capitalize">
+                  {order.status}
+                </span>
+              </div>
               <div className="flex justify-between text-sm pt-2 border-t dark:border-gray-700">
                 <span className="text-gray-800 dark:text-gray-200 font-bold">
                   Total Amount
@@ -227,6 +358,50 @@ export default function OrderDetailsPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Delivery Partner */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 print:shadow-none print:border print:border-gray-300 print:rounded-none">
+          <div className="flex items-center gap-2 mb-3 text-gray-500 dark:text-gray-400 text-sm font-medium">
+            <Truck size={16} className="print:hidden" /> Delivery Partner
+          </div>
+          {order.deliveryBoy ? (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Name</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {order.deliveryBoy.user?.name?.trim() || "Assigned Rider"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Phone</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {order.deliveryBoy.user?.phone || "N/A"}
+                </span>
+              </div>
+              {order.deliveryBoy.vehicleNo ? (
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">Vehicle</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {order.deliveryBoy.vehicleName || ""}
+                    {order.deliveryBoy.vehicleNo
+                      ? ` • ${order.deliveryBoy.vehicleNo}`
+                      : ""}
+                  </span>
+                </div>
+              ) : null}
+              {order.deliveryBoy.lastLocationUpdate ? (
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Last update</span>
+                  <span>
+                    {new Date(order.deliveryBoy.lastLocationUpdate).toLocaleString()}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Rider not assigned yet.</p>
+          )}
         </div>
 
         {/* Footer Message - Print Only */}
