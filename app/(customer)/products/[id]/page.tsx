@@ -37,7 +37,7 @@ export default function ProductPage() {
   const id = Array.isArray(idParam) ? idParam[0] : idParam;
 
   // Stores
-  const { addToCart, isLoading: isCartLoading } = useCartStore();
+  const { addToCart, isLoading: isCartLoading, items: cartItems } = useCartStore();
   const { toggleWishlist, isWishlisted } = useWishlistStore();
   const { geoLocation, setGeoLocation } = useLocationStore();
 
@@ -190,6 +190,12 @@ export default function ProductPage() {
   }, [id]);
 
   const isLiked = product ? isWishlisted(product?.id?.toString()) : false;
+
+  // Check if product is already in cart
+  const isInCart = useMemo(() => {
+    if (!product) return false;
+    return cartItems.some((item) => item.productId === product.id);
+  }, [cartItems, product]);
 
   // Handlers
   const handleQuantityChange = (val: number) => {
@@ -632,16 +638,19 @@ export default function ProductPage() {
 
                     {/* Add to Cart Button */}
                     <button
-                      onClick={handleAddToCart}
+                      onClick={isInCart ? () => router.push('/cart') : handleAddToCart}
                       disabled={isCartLoading || isBuying}
-                      className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`flex-1 font-bold py-4 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${isInCart
+                          ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/30'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
                     >
                       {isCartLoading ? (
                         <Loader2 size={20} className="animate-spin" />
                       ) : (
                         <>
                           <ShoppingCart size={20} />
-                          <span className="hidden sm:inline">Add to Cart</span>
+                          <span className="hidden sm:inline">{isInCart ? 'View Cart' : 'Add to Cart'}</span>
                         </>
                       )}
                     </button>
