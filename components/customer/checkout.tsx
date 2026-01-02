@@ -145,8 +145,10 @@ const AddAddressFrom = ({
   };
 
   const submitAddress = async (forceWithoutGeo = false) => {
-    if (!forceWithoutGeo && !geoCoords && !newAddress.geoLocation) {
+    // Geo location is now REQUIRED - no option to save without it
+    if (!geoCoords && !newAddress.geoLocation) {
       setShowGeoPrompt(true);
+      toast.error("Geo location is required to save address for delivery validation");
       return;
     }
 
@@ -334,17 +336,14 @@ const AddAddressFrom = ({
                   }}
                   className="flex-1 py-3 rounded-xl bg-yellow-500 text-white font-bold hover:bg-yellow-600"
                 >
-                  Send geo location & continue
+                  Share My Location
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowGeoPrompt(false);
-                    submitAddress(true);
-                  }}
+                  onClick={() => setShowGeoPrompt(false)}
                   className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100 font-semibold hover:border-yellow-400"
                 >
-                  Save without geo
+                  Cancel
                 </button>
               </div>
             </div>
