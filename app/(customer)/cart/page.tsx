@@ -14,7 +14,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useCartStore } from "@/store";
-import { useLocationStore } from "@/store/locationStore";
 import type { CartItem } from "@/types/products";
 
 type ShopInfo = {
@@ -34,83 +33,28 @@ type ShopInfo = {
 
 type ItemWithShop = CartItem & { shop?: ShopInfo };
 
-const earthDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-    Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return 6371 * c;
-};
-
 export default function CartPage() {
   const router = useRouter(); // Initialize router
   const { items, fetchCart } = useCartStore();
-  const { geoLocation, setGeoLocation } = useLocationStore();
   const [selectedItems, setSelectedItems] = useState<Set<string | number>>(new Set());
-  const [latitudeInput, setLatitudeInput] = useState("");
-  const [longitudeInput, setLongitudeInput] = useState("");
-  const [locationError, setLocationError] = useState<string>("");
-  const [isLocating, setIsLocating] = useState(false);
-  const [hasAutoRequested, setHasAutoRequested] = useState(false);
 
   useEffect(() => {
     if (items.length <= 0) fetchCart();
   }, [fetchCart, items.length]);
 
-  // Load stored geo location; if missing, request once and persist
   useEffect(() => {
-    if (geoLocation && (!latitudeInput || !longitudeInput)) {
-      setLatitudeInput(geoLocation.lat.toFixed(6));
-      setLongitudeInput(geoLocation.lng.toFixed(6));
-      return;
-    }
-
-    if (!geoLocation && !hasAutoRequested && typeof window !== "undefined" && navigator.geolocation) {
-      setHasAutoRequested(true);
-      setIsLocating(true);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setGeoLocation(coords);
-          setLatitudeInput(coords.lat.toFixed(6));
-          setLongitudeInput(coords.lng.toFixed(6));
-          setLocationError("");
-          setIsLocating(false);
-        },
-        () => {
-          setIsLocating(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-  }, [geoLocation, latitudeInput, longitudeInput, hasAutoRequested, setGeoLocation]);
-
-  const userCoordinates = useMemo(() => {
-    const lat = parseFloat(latitudeInput);
-    const lng = parseFloat(longitudeInput);
-    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
-    return null;
-  }, [latitudeInput, longitudeInput]);
+    if (items.length <= 0) fetchCart();
+  }, [fetchCart, items.length]);
 
   const availability = useMemo(() => {
-    const shopMap: Record<
+    const byItemId: Record<
       string | number,
       {
+        selectable: boolean;
         shopId: string | number;
-        shopName?: string;
-        total: number;
-        minOrder: number;
-        meetsMin: boolean;
         deliveryFee: number;
-        hasCoords: boolean;
-        inRange: boolean;
-        distanceKm?: number;
+        minOrder: number;
+        shopName?: string;
       }
     > = {};
 
@@ -126,117 +70,17 @@ export default function CartPage() {
         shop?.minimumOrderValue ??
         0;
 
-      if (!shopMap[shopId]) {
-        shopMap[shopId] = {
-          shopId,
-          shopName: shop?.name,
-          total: 0,
-          minOrder,
-          meetsMin: true,
-          deliveryFee: 0,
-          hasCoords: false,
-          inRange: false,
-          distanceKm: undefined,
-        };
-      }
-
-      shopMap[shopId].total += item.product.price * item.quantity;
-    });
-
-    Object.values(shopMap).forEach((entry) => {
-      const shop = (typedItems.find((i) => (i.shop?.id ?? `shop-${i.id}`) === entry.shopId) as ItemWithShop | undefined)?.shop;
-
-      const geoString = shop?.address?.geoLocation;
-      const latFromField = shop?.address?.latitude;
-      const lngFromField = shop?.address?.longitude;
-
-      const geoParts = geoString?.split(",");
-      const shopLat =
-        geoParts?.length === 2
-          ? parseFloat(geoParts[0].trim())
-          : latFromField
-            ? parseFloat(latFromField)
-            : undefined;
-      const shopLng =
-        geoParts?.length === 2
-          ? parseFloat(geoParts[1].trim())
-          : lngFromField
-            ? parseFloat(lngFromField)
-            : undefined;
-
-      const hasCoords = Number.isFinite(shopLat) && Number.isFinite(shopLng);
-      entry.hasCoords = !!hasCoords;
-
-      const minOrder = entry.minOrder;
-      entry.meetsMin = minOrder > 0 ? entry.total >= minOrder : true;
-
-      const deliveryRatesRaw = (shop?.deliveryRates as any)?.rates ?? shop?.deliveryRates ?? [];
-      const deliveryRates = Array.isArray(deliveryRatesRaw) ? deliveryRatesRaw : [];
-
-      if (userCoordinates && hasCoords) {
-        const distance = earthDistanceKm(userCoordinates.lat, userCoordinates.lng, shopLat as number, shopLng as number);
-        entry.distanceKm = distance;
-
-        const sortedRates = [...deliveryRates].sort((a, b) => a.km - b.km);
-        const matchedRate = sortedRates.find((rate) => distance <= rate.km);
-
-        if (matchedRate) {
-          entry.deliveryFee = matchedRate.price;
-          entry.inRange = true;
-        } else if (sortedRates.length > 0) {
-          entry.inRange = false;
-        } else {
-          entry.deliveryFee = 0;
-          entry.inRange = true;
-        }
-      }
-    });
-
-    const byItemId: Record<
-      string | number,
-      {
-        selectable: boolean;
-        reason?: string;
-        shopId: string | number;
-        distanceKm?: number;
-        deliveryFee: number;
-        minOrder: number;
-        meetsMin: boolean;
-        inRange: boolean;
-        shopName?: string;
-      }
-    > = {};
-
-    typedItems.forEach((item) => {
-      const shopId = item.shop?.id ?? `shop-${item.id}`;
-      const entry = shopMap[shopId];
-
-      let reason = "";
-      if (!userCoordinates) {
-        reason = "Add your location to check availability";
-      } else if (!entry.hasCoords) {
-        reason = "Shop location unavailable";
-      } else if (!entry.inRange) {
-        reason = "Not available at your location";
-      } else if (entry.minOrder > 0 && !entry.meetsMin) {
-        reason = `Minimum order ₹${entry.minOrder.toFixed(0)} required`;
-      }
-
       byItemId[item.id] = {
-        selectable: reason === "",
-        reason: reason || undefined,
+        selectable: true, // All items are now selectable
         shopId,
-        distanceKm: entry.distanceKm,
-        deliveryFee: entry.deliveryFee,
-        minOrder: entry.minOrder,
-        meetsMin: entry.meetsMin,
-        inRange: entry.inRange,
-        shopName: entry.shopName,
+        deliveryFee: 0, // No delivery fee calculation
+        minOrder,
+        shopName: shop?.name,
       };
     });
 
-    return { byItemId, shopMap };
-  }, [items, userCoordinates]);
+    return { byItemId };
+  }, [items]);
 
   const effectiveSelected = useMemo(() => {
     return new Set(
@@ -251,19 +95,8 @@ export default function CartPage() {
   }, [items, effectiveSelected]);
 
   const deliveryTotal = useMemo(() => {
-    const shopIds = new Set(
-      items
-        .filter((item) => effectiveSelected.has(item.id))
-        .map((item) => availability.byItemId[item.id]?.shopId)
-        .filter((id): id is string | number => Boolean(id))
-    );
-    let total = 0;
-    shopIds.forEach((shopId) => {
-      const entry = availability.shopMap[shopId];
-      if (entry) total += entry.deliveryFee || 0;
-    });
-    return total;
-  }, [availability.shopMap, availability.byItemId, items, effectiveSelected]);
+    return 0; // No delivery fees
+  }, []);
 
   const grandTotal = selectedTotal + deliveryTotal;
 
@@ -281,11 +114,6 @@ export default function CartPage() {
 
   // Select/Deselect all
   const toggleSelectAll = () => {
-    if (!userCoordinates) {
-      setLocationError("Enter latitude and longitude to select items");
-      return;
-    }
-
     const selectableIds = items
       .filter((item) => availability.byItemId[item.id]?.selectable)
       .map((item) => item.id);
@@ -295,30 +123,6 @@ export default function CartPage() {
     } else {
       setSelectedItems(new Set(selectableIds));
     }
-  };
-
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported in this browser");
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setGeoLocation(coords);
-        setLatitudeInput(coords.lat.toFixed(6));
-        setLongitudeInput(coords.lng.toFixed(6));
-        setLocationError("");
-        setIsLocating(false);
-      },
-      () => {
-        setLocationError("Unable to fetch current location");
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
   };
 
   const selectableCount = useMemo(
@@ -342,55 +146,6 @@ export default function CartPage() {
         <span className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           ({items.length} items)
         </span>
-      </div>
-
-      <div className="mb-6 grid gap-3 md:grid-cols-[2fr_2fr_auto] items-end bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
-        <div className="hidden">
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-1">
-            Latitude
-          </label>
-          <input
-            type="number"
-            value={latitudeInput}
-            onChange={(e) => {
-              setLatitudeInput(e.target.value);
-              if (locationError) setLocationError("");
-            }}
-            placeholder="e.g. 25.370656"
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-          />
-        </div>
-        <div className="hidden">
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-1">
-            Longitude
-          </label>
-          <input
-            type="number"
-            value={longitudeInput}
-            onChange={(e) => {
-              setLongitudeInput(e.target.value);
-              if (locationError) setLocationError("");
-            }}
-            placeholder="e.g. 85.163734"
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-          />
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            disabled={isLocating}
-            className="whitespace-nowrap px-4 py-2 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition disabled:opacity-60"
-          >
-            {isLocating ? "Locating..." : "Use Current Location"}
-          </button>
-        </div>
-        <p className="md:col-span-3 text-xs text-gray-500 dark:text-gray-400">
-          Add your latitude and longitude to check delivery range and shop minimum order rules for each product.
-        </p>
-        {locationError && (
-          <p className="md:col-span-3 text-sm text-red-500">{locationError}</p>
-        )}
       </div>
 
       {items.length > 0 ? (
@@ -455,14 +210,12 @@ export default function CartPage() {
 
               <Link href={selectedItems.size > 0 ? "/checkout" : "#"} className="block w-full">
                 <button
-                  disabled={effectiveSelected.size === 0 || !userCoordinates}
+                  disabled={effectiveSelected.size === 0}
                   className="w-full bg-yellow-500 text-white font-bold py-4 rounded-xl hover:bg-yellow-600 transition-colors shadow-lg shadow-yellow-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   title={
                     effectiveSelected.size === 0
                       ? "Please select at least one product"
-                      : !userCoordinates
-                        ? "Add your location to continue"
-                        : ""
+                      : ""
                   }
                 >
                   Proceed to Checkout <ArrowRight size={20} />
@@ -515,12 +268,8 @@ type ItemProps = CartItem & {
   onToggleSelect: () => void;
   availability?: {
     selectable: boolean;
-    reason?: string;
-    distanceKm?: number;
     deliveryFee: number;
     minOrder: number;
-    meetsMin: boolean;
-    inRange: boolean;
     shopName?: string;
   };
 };
@@ -531,8 +280,6 @@ const ItemsList = (item: ItemProps) => {
     selectable: true,
     deliveryFee: 0,
     minOrder: 0,
-    meetsMin: true,
-    inRange: true,
   };
 
   const containerState = availability.selectable && item.isSelected;
@@ -583,18 +330,6 @@ const ItemsList = (item: ItemProps) => {
               <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mr-2">
                 {item.product.name}
               </h3>
-              <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-400">
-                {availability.distanceKm !== undefined && (
-                  <span>Distance: {availability.distanceKm.toFixed(1)} km</span>
-                )}
-                <span>Delivery: ₹{availability.deliveryFee.toFixed(2)}</span>
-                {availability.minOrder > 0 && (
-                  <span>Min order: ₹{availability.minOrder.toFixed(0)}</span>
-                )}
-              </div>
-              {availability.reason && (
-                <p className="text-sm text-red-500">{availability.reason}</p>
-              )}
             </div>
             <button
               onClick={() => removeFromCart(item.id)}
