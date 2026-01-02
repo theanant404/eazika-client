@@ -20,6 +20,7 @@ const TABS = [
   { id: "preparing", label: "Preparing" },
   { id: "ready", label: "Ready" },
   { id: "delivered", label: "Completed" },
+  { id: "cancelled", label: "Cancelled" },
 ];
 
 const getStatusColor = (status: string) => {
