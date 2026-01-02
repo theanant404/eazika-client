@@ -231,7 +231,7 @@ export default function ProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 pb-32 md:pb-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 pb-32 md:pb-8 sm:mt-5">
       <Suspense
         fallback={
           isLoading && (
@@ -303,6 +303,14 @@ export default function ProductPage() {
                     ))}
                   </div>
                 )}
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
+                    Description
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {product.description}
+                  </p>
+                </div>
               </div>
 
               {/* --- RIGHT: Details & Actions --- */}
@@ -413,14 +421,7 @@ export default function ProductPage() {
                 </div>
 
                 {/* Description */}
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
-                    Description
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {product.description}
-                  </p>
-                </div>
+
 
                 {/* Shop Information */}
                 {product.shop && (
@@ -641,8 +642,8 @@ export default function ProductPage() {
                       onClick={isInCart ? () => router.push('/cart') : handleAddToCart}
                       disabled={isCartLoading || isBuying}
                       className={`flex-1 font-bold py-4 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${isInCart
-                          ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/30'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                        ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/30'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                     >
                       {isCartLoading ? (
