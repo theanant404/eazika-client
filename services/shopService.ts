@@ -118,6 +118,27 @@ export interface ShopRider {
   totalDeliveries?: number;
   rating?: number;
   isVerified?: boolean;
+  vehicleOwnerName?: string;
+  user: {
+    id: number;
+    phone: string;
+  }
+  aadharNumber?: string;
+  panNumber?: string;
+  licenseNumber?: string;
+  licenseImage?: string;
+  vehicleName?: string;
+  vehicleNo?: string;
+  currentLat?: number;
+  currentLng?: number;
+  isAvailable?: boolean;
+  lastLocationUpdate: string;
+  totalOrdersAccepted: number;
+  totalOrdersDelivered: number;
+  totalOrdersCancelled?: number;
+  createdAt?: string;
+  updatedAt?: string;
+
 }
 
 export interface UserProfile {
