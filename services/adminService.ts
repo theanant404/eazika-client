@@ -33,9 +33,10 @@ export const AdminService = {
 
 
   getAllShops: async (status = "all") => {
-    const response = await axiosInstance.get(`/admin/shops/get-all`, {
+    const response = await axiosInstance.get(`/admin/shops/get-pending-verification`, {
       params: { status },
     });
+    // console.log("Fetched shops:", response.data.data);
     return response.data.data;
   },
   getAllShopsAddress: async () => {
