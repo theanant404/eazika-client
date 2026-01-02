@@ -769,7 +769,7 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.filter((p) => p.isActive !== false).map((product) => (
+              {filteredProducts.filter((p) => p.isGlobalProduct != true && p.isActive !== false).map((product) => (
                 <tr
                   key={product.id}
                   className="bg-white m-5 p-6 dark:bg-gray-800 rounded-2xl  md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700"
