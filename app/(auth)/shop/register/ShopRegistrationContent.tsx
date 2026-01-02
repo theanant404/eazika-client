@@ -367,55 +367,77 @@ export default function ShopRegistrationContent() {
     const handleUseCurrentLocation = () => {
         if (typeof navigator === "undefined" || !navigator.geolocation) {
             toast.error("Geolocation is not available on this device.");
+            setFormData((prev) => ({
+                ...prev,
+                address: {
+                    ...prev.address!,
+                    geoLocation: "",
+                },
+            }));
             return;
         }
         setIsLoading(true);
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const { latitude, longitude } = position.coords;
-            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
 
-            try {
-                const response = await fetch(url);
+                try {
+                    const response = await fetch(url);
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setFormData((prev) => ({
-                        ...prev,
-                        address: {
-                            ...prev.address!,
-                            line1: data.address.road || "",
-                            street:
-                                (data.address.suburb ? data.address.suburb + ", " : "") +
-                                (data.address.city_district
-                                    ? data.address.city_district + ", "
-                                    : "") +
-                                (data.address.city || ""),
+                    if (response.ok) {
+                        const data = await response.json();
+                        setFormData((prev) => ({
+                            ...prev,
+                            address: {
+                                ...prev.address!,
+                                line1: data.address.road || "",
+                                street:
+                                    (data.address.suburb ? data.address.suburb + ", " : "") +
+                                    (data.address.city_district
+                                        ? data.address.city_district + ", "
+                                        : "") +
+                                    (data.address.city || ""),
 
-                            city: data.address.city || "",
-                            state: data.address.state || "",
-                            country: data.address.country || "",
-                            pinCode: data.address.postcode || "",
-                            geoLocation: `${latitude},${longitude}`,
-                        },
-                    }));
-                } else {
-                    setFormData((prev) => ({
-                        ...prev,
-                        address: {
-                            ...prev.address!,
-                            geoLocation: `${latitude},${longitude}`,
-                        },
-                    }));
+                                city: data.address.city || "",
+                                state: data.address.state || "",
+                                country: data.address.country || "",
+                                pinCode: data.address.postcode || "",
+                                geoLocation: `${latitude},${longitude}`,
+                            },
+                        }));
+                    } else {
+                        setFormData((prev) => ({
+                            ...prev,
+                            address: {
+                                ...prev.address!,
+                                geoLocation: `${latitude},${longitude}`,
+                            },
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Failed to get address details", error);
+                    toast.error(
+                        "Unable to retrieve address from your location. Please try again."
+                    );
+                } finally {
+                    setIsLoading(false);
                 }
-            } catch (error) {
-                console.error("Failed to get address details", error);
-                toast.error(
-                    "Unable to retrieve address from your location. Please try again."
-                );
-            } finally {
+            },
+            (error) => {
+                // Handle location permission denied or error
+                console.warn("Geolocation error:", error);
+                setFormData((prev) => ({
+                    ...prev,
+                    address: {
+                        ...prev.address!,
+                        geoLocation: "",
+                    },
+                }));
+                toast.warning("Location permission denied. You can continue without it.");
                 setIsLoading(false);
             }
-        });
+        );
     };
 
     // STEP 4: Submit Application
