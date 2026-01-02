@@ -1,18 +1,80 @@
 "use client";
 
-import React from "react";
+import React, { use, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Store } from "lucide-react";
 import { ShopSidebar, menuItems as mobileNavItems } from "@/components/shop";
 import { cn } from "@/lib/utils";
-
+import ShopService from "@/services/shopService";
 export default function ShopLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [shopStatus, setShopStatus] = React.useState<{
+    status?: string;
+    isActive?: boolean;
+  } | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchShopStatus = async () => {
+      try {
+        const res = await ShopService.getShopStatus();
+        // Support both {data, statusCode, ...} and direct {status, isActive}
+        if (res && typeof res === "object") {
+          if (res.data && typeof res.data === "object") {
+            setShopStatus({ status: res.data.status, isActive: res.data.isActive });
+          } else {
+            setShopStatus({ status: res.status, isActive: res.isActive });
+          }
+        }
+      } catch (e) {
+        setShopStatus(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchShopStatus();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen w-full bg-gray-50 dark:bg-gray-900">
+        <span className="text-lg text-gray-700 dark:text-gray-200">Loading...</span>
+      </div>
+    );
+  }
+
+  if (!shopStatus || shopStatus.status !== "approved" || !shopStatus.isActive) {
+    return (
+      <div className="flex items-center justify-center h-screen w-full bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+          {shopStatus?.status === "pending" && !shopStatus?.isActive && (
+            <div>
+              <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Your application is submitted</h2>
+              <p className="text-gray-600 dark:text-gray-300">Your shop is not approved or not active yet. Please wait for approval.</p>
+              <p className="text-gray-600 dark:text-gray-300">Currently, your shop status is {shopStatus?.status}</p>
+            </div>
+          )}
+          {shopStatus?.status === "rejected" && (
+            <div>
+              <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Application Rejected</h2>
+              <p className="text-gray-600 dark:text-gray-300">Your shop application has been rejected. Please contact support for more information.</p>
+            </div>
+          )}
+          {shopStatus?.status === "suspended" && shopStatus?.isActive === false && (
+            <div>
+              <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Shop Suspended</h2>
+              <p className="text-gray-600 dark:text-gray-300">Your shop has been suspended. Please contact support for more information.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full bg-gray-50 dark:bg-gray-900 flex overflow-hidden">

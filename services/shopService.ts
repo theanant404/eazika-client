@@ -210,7 +210,10 @@ export const ShopService = {
     const response = await axios.get("/shops/get-shop-address");
     return response.data;
   },
-
+  getShopStatus: async () => {
+    const response = await axios.get("/shops/get-shop-status");
+    return response.data;
+  },
   // getShopGeoLocation: async (): Promise<string | undefined> => {
   //   const response = await axios.get("/shops/get-shop-address");
   //   // console.log("Shop address response:", response);
