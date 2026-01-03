@@ -27,16 +27,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-
-// --- Local Mock Data ---
-
-const mockRiderHistory = [
-    { id: '#ORD-9981', date: 'Today, 10:30 AM', amount: '₹450', status: 'Delivered' },
-    { id: '#ORD-9972', date: 'Yesterday, 2:15 PM', amount: '₹120', status: 'Delivered' },
-    { id: '#ORD-9965', date: 'Yesterday, 11:00 AM', amount: '₹850', status: 'Delivered' },
-    { id: '#ORD-9844', date: 'Nov 20, 4:45 PM', amount: '₹320', status: 'Cancelled' },
-];
-
 import { AdminService } from "@/services/adminService";
 
 export default function AdminRidersPage() {
@@ -53,6 +43,8 @@ export default function AdminRidersPage() {
     const [riderAnalyticsTrend, setRiderAnalyticsTrend] = useState<any[]>([]);
     const [riderAnalyticsMetrics, setRiderAnalyticsMetrics] = useState<{ totalDeliveredOrders: number; totalDeliveredAmount: number }>({ totalDeliveredOrders: 0, totalDeliveredAmount: 0 });
     const [riderAnalyticsLoading, setRiderAnalyticsLoading] = useState<boolean>(false);
+    const [riderHistory, setRiderHistory] = useState<any[]>([]);
+    const [riderHistoryLoading, setRiderHistoryLoading] = useState<boolean>(false);
 
     useEffect(() => {
         fetchRiders();
@@ -67,6 +59,12 @@ export default function AdminRidersPage() {
             fetchRiderAnalytics(selectedRider.id, riderAnalyticsFilter);
         }
     }, [modalTab, riderAnalyticsFilter, selectedRider]);
+
+    useEffect(() => {
+        if (modalTab === 'history' && selectedRider) {
+            fetchRiderHistory(selectedRider.id);
+        }
+    }, [modalTab, selectedRider]);
 
     const fetchRiders = async () => {
         try {
@@ -139,6 +137,20 @@ export default function AdminRidersPage() {
             setRiderAnalyticsMetrics({ totalDeliveredOrders: 0, totalDeliveredAmount: 0 });
         } finally {
             setRiderAnalyticsLoading(false);
+        }
+    };
+
+    const fetchRiderHistory = async (riderId: number) => {
+        try {
+            setRiderHistoryLoading(true);
+            const data = await AdminService.getRiderOrderHistory(riderId);
+            const orders = data?.orders || [];
+            setRiderHistory(Array.isArray(orders) ? orders : []);
+        } catch (err) {
+            console.error('Failed to fetch rider history', err);
+            setRiderHistory([]);
+        } finally {
+            setRiderHistoryLoading(false);
         }
     };
 
@@ -496,26 +508,46 @@ export default function AdminRidersPage() {
                                 {/* TAB: HISTORY */}
                                 {modalTab === 'history' && (
                                     <div className="space-y-4">
-                                        {mockRiderHistory.map((order, i) => (
-                                            <div key={i} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500">
-                                                        <History size={18} />
+                                        {riderHistoryLoading ? (
+                                            <div className="h-64 flex items-center justify-center text-gray-500">Loading history...</div>
+                                        ) : riderHistory.length > 0 ? (
+                                            <>
+                                                {riderHistory.map((order) => (
+                                                    <div key={order.orderId} className="p-4 border border-gray-100 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500">
+                                                                    <History size={18} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Order #{order.orderId}</p>
+                                                                    <p className="text-xs text-gray-500">{new Date(order.dateTime).toLocaleString()}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-bold text-gray-900 dark:text-white text-sm">₹{order.amount || 0}</p>
+                                                                <span className={`text-[10px] font-bold capitalize ${order.status === 'delivered' ? 'text-green-600' :
+                                                                        order.status === 'cancelled' ? 'text-red-600' : 'text-orange-600'
+                                                                    }`}>
+                                                                    {order.status}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="pl-13 space-y-1">
+                                                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                                <span className="font-semibold">Customer:</span> {order.customer?.name || order.customer?.phone || 'N/A'}
+                                                            </p>
+                                                            <p className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1">
+                                                                <MapPin size={12} className="text-orange-500 mt-0.5" />
+                                                                <span>{order.deliveryAddress || 'N/A'}</span>
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 dark:text-white text-sm">{order.id}</p>
-                                                        <p className="text-xs text-gray-500">{order.date}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-gray-900 dark:text-white text-sm">{order.amount}</p>
-                                                    <span className={`text-[10px] font-bold ${order.status === 'Delivered' ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {order.status}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <button className="w-full py-2 text-sm text-blue-600 font-medium hover:underline">View All Orders</button>
+                                                ))}
+                                            </>
+                                        ) : (
+                                            <div className="h-64 flex items-center justify-center text-gray-500">No order history</div>
+                                        )}
                                     </div>
                                 )}
 
