@@ -52,7 +52,7 @@ export default function RidersPage() {
     const fetchRiders = async () => {
         try {
             const data = await ShopService.getShopRiders();
-            console.log("Riders data:", data);
+            // console.log("Riders data:", data);
             setRiders(data);
         } catch (error) {
             console.error("Failed to load riders", error);
