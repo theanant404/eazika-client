@@ -3,10 +3,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, Variants } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Search, ArrowLeft, Loader2, LayoutGrid } from "lucide-react";
-import { ShopService, Category } from "@/services/shopService";
+import { Search, ArrowLeft, Loader2, ArrowRight, Heart, Star } from "lucide-react";
+import { ShopService, Category, shopService } from "@/services/shopService";
 import { categories as mockCategories } from "@/app/data/mockData";
 import Image from "next/image";
+import coustomerServices from "@/services/customerService";
+import { useWishlistStore } from "@/hooks/useWishlistStore";
+import Link from "next/link";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -32,12 +35,19 @@ export default function CategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [products, setProducts] = useState<any[]>([]); // Replace any with your Product type if available
+  const { toggleWishlist, isWishlisted } = useWishlistStore();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const fetchCategories = async () => {
       setIsLoading(true);
       try {
-        const data = await ShopService.getCategoriesForPbulic();
+        const data = await coustomerServices.getCategories();
+        // console.log("Fetched categories:", data);
         const list = Array.isArray(data) && data.length > 0 ? data : mockCategories;
         const mapped = list.map((cat: any) => {
           const icon = typeof cat.icon === "function" ? cat.icon : undefined;
@@ -60,11 +70,12 @@ export default function CategoriesPage() {
       try {
         let data;
         if (activeTab === "all") {
-          data = await ShopService.getShopProducts(1, 100);
+          data = await coustomerServices.filterProducts("");
           setProducts(data.products || []);
         } else {
           // You may need to implement getProductsByCategory in your ShopService
-          data = await ShopService.getShopProducts(1, 100, activeTab);
+          data = await coustomerServices.filterProducts(activeTab);
+          // console.log("Fetched products for category", activeTab, data);
           setProducts(data.products || []);
         }
       } catch (error) {
@@ -75,11 +86,12 @@ export default function CategoriesPage() {
     };
     fetchProducts();
   }, [activeTab]);
+  // console.log(activeTab, "active tabs")
 
   // Tabs: All + each category
   const tabs = useMemo(() => [
     { id: "all", name: "All" },
-    ...categories.map((cat) => ({ id: cat.slug, name: cat.name, icon: cat.icon })),
+    ...categories.map((cat) => ({ id: cat.id.toString(), name: cat.name, icon: cat.icon })),
   ], [categories]);
 
   // Filtered products by search
@@ -134,11 +146,11 @@ export default function CategoriesPage() {
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 }`}
             >
-              {tab.icon && typeof tab.icon === "function" && (
+              {/* {tab.icon && typeof tab.icon === "function" && (
                 <span className="w-5 h-5 flex items-center justify-center">
                   <tab.icon size={18} />
                 </span>
-              )}
+              )} */}
               {tab.name}
             </button>
           ))}
@@ -152,43 +164,22 @@ export default function CategoriesPage() {
             </div>
           ) : filteredProducts.length > 0 ? (
             <motion.div
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
+              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
               variants={containerVariants}
               initial="hidden"
               animate="visible"
             >
-              {filteredProducts.map((product) => (
-                <motion.div
-                  key={product.id}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center gap-4 h-40 md:h-48 transition-colors hover:border-yellow-500/50 dark:hover:border-yellow-500/50 group relative overflow-hidden"
-                >
-                  <div className="w-16 h-16 rounded-full bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center group-hover:bg-yellow-50 dark:group-hover:bg-yellow-900/20 transition-colors relative overflow-hidden">
-                    {product.images && product.images.length > 0 ? (
-                      <Image
-                        src={product.images[0]}
-                        alt={product.name}
-                        fill
-                        className="rounded-full object-cover"
-                      />
-                    ) : (
-                      <LayoutGrid className="text-gray-400" size={24} />
-                    )}
-                  </div>
-                  <div className="text-center z-10">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-yellow-700 dark:group-hover:text-yellow-400 transition-colors block">
-                      {product.name}
-                    </span>
-                    {product.price !== undefined && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 block">
-                        ₹{product.price}
-                      </span>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+              {filteredProducts.map((product) => {
+                const liked = isClient ? isWishlisted(product.id.toString()) : false;
+                return (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    liked={liked}
+                    toggleWishlist={toggleWishlist}
+                  />
+                );
+              })}
             </motion.div>
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -200,3 +191,78 @@ export default function CategoriesPage() {
     </div>
   );
 }
+
+const ProductCard = ({
+  product,
+  liked,
+  toggleWishlist,
+}: {
+  product: any;
+  liked: boolean;
+  toggleWishlist: (productId: string) => void;
+}) => {
+  return (
+    <Link href={`/products/${product.id}`}>
+      <motion.div
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden group h-full flex flex-col"
+        variants={itemVariants}
+        layout
+        whileHover={{ y: -5 }}
+        transition={{ type: "spring", stiffness: 300 }}
+      >
+        <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-700">
+          {product.images && product.images.length > 0 ? (
+            <Image
+              src={product.images[0]}
+              height={400}
+              width={400}
+              alt={product.name}
+              className="group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+              No Image
+            </div>
+          )}
+
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleWishlist(product.id.toString());
+            }}
+            className={`absolute top-2 right-2 p-2 rounded-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm transition-all shadow-sm z-10 ${liked ? "text-red-500" : "text-gray-400 hover:text-red-500"
+              }`}
+          >
+            <Heart size={18} className={`${liked ? "fill-current" : ""}`} />
+          </button>
+        </div>
+
+        <div className="p-3 md:p-4 flex flex-col grow">
+          <div className="flex items-center space-x-1 mb-1">
+            <Star size={12} className="text-yellow-400 fill-current" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {product.rating?.average || "0.0"}
+            </span>
+          </div>
+          <h3 className="text-sm md:text-base font-medium text-gray-800 dark:text-gray-200 line-clamp-2 mb-2">
+            {product.name}
+          </h3>
+          <div className="mt-auto flex items-center justify-between">
+            <p className="text-base md:text-lg font-bold text-gray-900 dark:text-white">
+              ₹
+              {product.prices && product.prices.length > 0
+                ? product.prices[0].price
+                : "N/A"}
+            </p>
+            <button
+              className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:bg-yellow-500 group-hover:text-white transition-colors"
+            >
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  );
+};

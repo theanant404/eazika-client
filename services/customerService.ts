@@ -90,7 +90,7 @@ const coustomerServices = {
 
   getCategories: async (): Promise<any[]> => {
     try {
-      const response = await axios.get("/customers/categories");
+      const response = await axios.get("/customers/products/categories");
       return response.data.data;
     } catch (error) {
       console.warn("Failed to fetch categories");
@@ -108,7 +108,10 @@ const coustomerServices = {
     // console.log(response.data);
     return response.data;
   },
-
+  filterProducts: async (filter: string): Promise<ProductListType> => {
+    const response = await axios.get(`/customers/products/filter?filter=${filter}`);
+    return response.data.data;
+  },
   cartMethods: allCartMethods,
 };
 
