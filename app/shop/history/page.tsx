@@ -17,8 +17,8 @@ import { shopService, type ShopOrder } from "@/services/shopService";
 const TABS = [
   { id: "all", label: "All" },
   { id: "pending", label: "Pending" },
-  { id: "preparing", label: "Preparing" },
-  { id: "ready", label: "Ready" },
+  { id: "confirmed", label: "Preparing" },
+  { id: "shipped", label: "Ready" },
   { id: "delivered", label: "Completed" },
   { id: "cancelled", label: "Cancelled" },
 ];
@@ -72,7 +72,7 @@ export default function ShopOrdersPage() {
       setIsLoading(true);
       try {
         // Always send activeTab as status to API
-        const data = await shopService.getShopOrders(1, 10, activeTab);
+        const data = await shopService.getOrders(1, 10, activeTab);
         setOrders(data.orders || []);
       } catch (error) {
         console.error("Failed to load orders", error);

@@ -63,6 +63,21 @@ export default function ShopDashboard() {
     return Array.from(seen.values());
   }, [currentOders.orders]);
 
+  // Tabs for order status filtering
+  const ORDER_TABS = [
+    { id: "all", label: "All Orders" },
+    { id: "pending", label: "Pending" },
+    { id: "confirmed", label: "Confirmed" },
+    { id: "shipped", label: "Shipped" },
+  ];
+  const [orderTab, setOrderTab] = useState("all");
+
+  // Filter orders by selected tab
+  const filteredOrders = useMemo(() => {
+    if (orderTab === "all") return uniqueOrders;
+    return uniqueOrders.filter((order) => order.status === orderTab);
+  }, [uniqueOrders, orderTab]);
+
   // Helper to construct stat cards
   const stats = [
     {
@@ -162,10 +177,27 @@ export default function ShopDashboard() {
       </div>
       {/* Recent Orders Section */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col min-h-[300px]">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center shrink-0">
-          <h2 className="font-bold text-lg text-gray-900 dark:text-white">
-            Recent Orders
-          </h2>
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+          <div className="flex items-center gap-4">
+            <h2 className="font-bold text-lg text-gray-900 dark:text-white">
+              Recent Orders
+            </h2>
+            {/* Tabs for order status */}
+            <div className="flex gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl p-1">
+              {ORDER_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setOrderTab(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 ${orderTab === tab.id
+                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
           {uniqueOrders.length > 0 && (
             <Link
               href="/shop/history"
@@ -176,93 +208,88 @@ export default function ShopDashboard() {
           )}
         </div>
         <div className="flex-1 flex flex-col">
-          {uniqueOrders.length > 0 ? (
+          {filteredOrders.length > 0 ? (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {uniqueOrders
-                .filter(
-                  (order) =>
-                    order.status !== "delivered" && order.status !== "cancelled"
-                )
-                .map((order) => (
-                  <Link
-                    href={`shop/order/${order.id}`}
-                    key={order.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full text-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 font-bold">
-                        {order.customerName.charAt(0) || "C"}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
-                            {order.customerName || "Customer"}
-                          </h4>
-                          <span className="text-xs text-gray-400">
-                            • #{order.id}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-400">
-                          <Clock size={12} />{" "}
-                          {new Date(order.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
-                            {order.address}
-                          </h4>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                          {order.itemCount} items • {order.paymentMethod}
-                        </p>
-                      </div>
+              {filteredOrders.map((order) => (
+                <Link
+                  href={`shop/order/${order.id}`}
+                  key={order.id}
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full text-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 font-bold">
+                      {(order.customerName?.charAt(0) || "C").toUpperCase()}
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                      <div className="text-right">
-                        {/* "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"; */}
-                        <span
-                          className={cn(
-                            "text-[10px] px-2 py-0.5 rounded-full font-medium uppercase",
-                            order.status === "pending"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : order.status === "confirmed"
-                                ? "bg-blue-100 text-blue-700"
-                                : order.status === "shipped"
-                                  ? "bg-purple-100 text-purple-700"
-                                  : order.status === "delivered"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-red-100 text-red-700"
-                          )}
-                        >
-                          {order.status === "pending"
-                            ? "Pending"
-                            : order.status === "confirmed"
-                              ? "Confirmed"
-                              : order.status === "shipped"
-                                ? "Ready for Delivery"
-                                : order.status === "delivered"
-                                  ? "Delivered"
-                                  : "Cancelled"}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                          {order.customerName || "Customer"}
+                        </h4>
+                        <span className="text-xs text-gray-400">
+                          • #{order.id}
                         </span>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900 dark:text-white text-sm">
-                          ₹{order.totalAmount.toFixed(2)}
-                        </p>
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <Clock size={12} />{" "}
+                        {new Date(order.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </div>
                     </div>
-                  </Link>
-                ))}
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                          {order.address}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                        {order.itemCount} items • {order.paymentMethod}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                    <div className="text-right">
+                      {/* "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"; */}
+                      <span
+                        className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full font-medium uppercase",
+                          order.status === "pending"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : order.status === "confirmed"
+                              ? "bg-blue-100 text-blue-700"
+                              : order.status === "shipped"
+                                ? "bg-purple-100 text-purple-700"
+                                : order.status === "delivered"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                        )}
+                      >
+                        {order.status === "pending"
+                          ? "Pending"
+                          : order.status === "confirmed"
+                            ? "Confirmed"
+                            : order.status === "shipped"
+                              ? "Ready for Delivery"
+                              : order.status === "delivered"
+                                ? "Delivered"
+                                : "Cancelled"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                    <div className="text-right">
+                      <p className="font-bold text-gray-900 dark:text-white text-sm">
+                        ₹{order.totalAmount.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           ) : (
             /* --- EMPTY STATE UI --- */

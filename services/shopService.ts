@@ -507,6 +507,16 @@ export const ShopService = {
     });
     return response.data.data;
   },
+  getOrders: async (
+    pageOrStatus: number | string = 1,
+    limit: number | string = 10,
+    status = "all"
+  ) => {
+    const response = await axios.get("/shops/orders/get-orders", {
+      params: { page: pageOrStatus, limit, status }
+    });
+    return response.data.data;
+  },
 
   getShopOrderById: async (id: number | string): Promise<OrderDetail> => {
     const response = await axios.get(`/shops/orders/order/${id}`);
