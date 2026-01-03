@@ -14,31 +14,60 @@ import {
   X,
   Download,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
-    totalSales: "₹0",
+    totalSales: 0,
     totalOrders: 0,
     totalUsers: 0,
     totalShops: 0,
     pendingShopApprovals: 0,
     activeOrders: 0,
+    ridersTotal: 0,
+    ridersActive: 0,
+    topCities: [] as any[],
     revenueTrend: [] as any[],
+    ordersTrend: [] as any[],
+    orderStatusDistribution: [] as any[],
   });
 
   const [loading, setLoading] = useState(true);
+
+  const formatCurrency = (value: number | string) => {
+    const num = typeof value === "string" ? Number(value) : value;
+    const safeNum = Number.isFinite(num) ? num : 0;
+    return `₹${safeNum.toLocaleString()}`;
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const data = await AdminService.getStats();
+        console.log("Fetched dashboard stats:", data);
         setStats({
-          ...data,
-          // Format currency if backend sends raw number
-          totalSales:
-            typeof data.totalSales === "number"
-              ? `₹${data.totalSales}`
-              : data.totalSales,
+          totalSales: Number(data.totalSales) || 0,
+          totalOrders: Number(data.totalOrders) || 0,
+          totalUsers: Number(data.totalUsers) || 0,
+          totalShops: Number(data.totalShops) || 0,
+          pendingShopApprovals: Number(data.pendingShopApprovals) || 0,
+          activeOrders: Number(data.activeOrders) || 0,
+          ridersTotal: Number(data?.riders?.total) || 0,
+          ridersActive: Number(data?.riders?.active) || 0,
+          topCities: Array.isArray(data.topCities) ? data.topCities : [],
+          revenueTrend: Array.isArray(data.revenueTrend) ? data.revenueTrend : [],
+          ordersTrend: Array.isArray((data as any).ordersTrend) ? (data as any).ordersTrend : [],
+          orderStatusDistribution: Array.isArray((data as any).orderStatusDistribution)
+            ? (data as any).orderStatusDistribution
+            : [],
         });
       } catch (error) {
         console.error("Failed to fetch dashboard stats", error);
@@ -78,7 +107,7 @@ export default function AdminDashboard() {
                 Total Revenue
               </p>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {stats.totalSales}
+                {formatCurrency(stats.totalSales)}
               </h3>
             </div>
             <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-lg">
@@ -153,43 +182,74 @@ export default function AdminDashboard() {
       {/* Analytics Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Main Chart: Revenue & Orders Trend */}
+        {/* Main Chart: Revenue & Orders Area Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Weekly Performance</h3>
 
-          {/* Simple Bar Chart Implementation */}
-          <div className="h-64 flex items-end justify-between gap-2 sm:gap-4">
-            {stats.revenueTrend?.map((item: any, i: number) => {
-              const maxVal = Math.max(...stats.revenueTrend.map((d: any) => d.value), 100);
-              const heightPct = (item.value / maxVal) * 100;
+          <div className="h-80 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-4">
+            {stats.revenueTrend.length || stats.ordersTrend.length ? (
+              (() => {
+                const labels = Array.from(
+                  new Set([
+                    ...stats.revenueTrend.map((d: any) => d.name),
+                    ...stats.ordersTrend.map((d: any) => d.name),
+                  ])
+                );
 
-              return (
-                <div key={i} className="flex flex-col items-center gap-2 flex-1 group relative">
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 pointer-events-none">
-                    ₹{item.value}
-                  </div>
+                const chartData = labels.map((label) => {
+                  const rev = stats.revenueTrend.find((d: any) => d.name === label)?.value || 0;
+                  const ord = stats.ordersTrend.find((d: any) => d.name === label)?.value || 0;
+                  return { name: label, revenue: rev, orders: ord };
+                });
 
-                  {/* Bar */}
-                  <div
-                    className="w-full max-w-[40px] bg-indigo-100 dark:bg-indigo-900/30 rounded-t-lg relative overflow-hidden transition-all duration-500 hover:bg-indigo-200 dark:hover:bg-indigo-800/50"
-                    style={{ height: `${heightPct || 1}%` }} // Min height 1% for visual
-                  >
-                    <div
-                      className="absolute bottom-0 left-0 right-0 bg-indigo-500 transition-all duration-1000 ease-out"
-                      style={{ height: '100%' }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-500 font-medium">{item.name}</span>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-indigo-500 rounded-full"></span> Revenue
-            </div>
+                return (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366F1" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="ordFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }}
+                        formatter={(value: any, key) => {
+                          if (key === "revenue") return [formatCurrency(value), "Revenue"];
+                          return [value, "Orders"];
+                        }}
+                      />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="#6366F1"
+                        fill="url(#revFill)"
+                        strokeWidth={2}
+                        dot={{ r: 3, strokeWidth: 1.5, fill: "#6366F1" }}
+                        activeDot={{ r: 5 }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="orders"
+                        stroke="#3B82F6"
+                        fill="url(#ordFill)"
+                        strokeWidth={2}
+                        dot={{ r: 3, strokeWidth: 1.5, fill: "#3B82F6" }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                );
+              })()
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400">No trend data</div>
+            )}
           </div>
         </div>
 
@@ -210,18 +270,61 @@ export default function AdminDashboard() {
                         item.name === 'shipped' ? 'bg-blue-500' :
                           'bg-orange-500'
                       }`}
-                    style={{ width: `${(item.value / stats.totalOrders) * 100}%` }}
+                    style={{ width: `${stats.totalOrders ? (item.value / stats.totalOrders) * 100 : 0}%` }}
                   />
                 </div>
               </div>
             ))}
 
-            {(!stats as any).orderStatusDistribution?.length && (
+            {!(stats as any).orderStatusDistribution?.length && (
               <div className="text-center py-10 text-gray-400">No order data yet</div>
             )}
           </div>
         </div>
 
+      </div>
+
+      {/* Riders & Top Cities */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Riders</h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.ridersTotal}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Active</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.ridersActive}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Top Cities</h3>
+          {stats.topCities.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 uppercase text-xs font-bold">
+                  <tr>
+                    <th className="px-4 py-3">City</th>
+                    <th className="px-4 py-3">Orders</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {stats.topCities.map((c: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{c.city}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{c.orderCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-gray-500 text-sm">No city data</div>
+          )}
+        </div>
       </div>
     </div>
   );
