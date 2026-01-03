@@ -171,16 +171,19 @@ export interface Category {
 export interface ShopAnalytics {
   revenueChart: { label: string; value: number }[];
   ordersChart: { label: string; value: number }[];
-  metrics: {
-    revenue: string;
-    orders: string;
-    customers: string;
-    aov: string;
-    revenueTrend?: string;
-    ordersTrend?: string;
-    customersTrend?: string;
-    aovTrend?: string;
-  };
+  data: {
+    metrics: {
+      revenue: string;
+      orders: string;
+      customers: string;
+      aov: string;
+      revenueTrend?: string;
+      ordersTrend?: string;
+      customersTrend?: string;
+      aovTrend?: string;
+    };
+  }
+
   products: {
     name: string;
     sales: number;
