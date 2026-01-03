@@ -81,6 +81,7 @@ export const AdminService = {
 
   getAllRiders: async () => {
     const response = await axiosInstance.get(`/admin/riders/get-all`);
+    console.log(response.data.data);
     return response.data.data;
   },
 

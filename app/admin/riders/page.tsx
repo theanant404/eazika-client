@@ -77,7 +77,31 @@ export default function AdminRidersPage() {
         try {
             setLoading(true);
             const data = await AdminService.getAllRiders();
-            setRiders(data);
+
+            const normalized = Array.isArray(data) ? data.map((r: any) => {
+                const user = r.user || {};
+                const shopAddress = r.shopkeeper?.address || r.address || {};
+                const name = r.name || user.name || r.vehicleOwnerName || `Rider #${r.id}`;
+                const phone = r.phone || user.phone || '';
+                const status = r.status || (r.isAvailable ? 'available' : 'offline');
+                const totalDeliveries = r.totalDeliveries ?? r._count?.orders ?? 0;
+                const rating = r.rating ?? 4.8;
+                const addressText = shopAddress.line1
+                    ? `${shopAddress.line1}${shopAddress.city ? ", " + shopAddress.city : ''}`
+                    : shopAddress.city || 'Address not set';
+
+                return {
+                    ...r,
+                    name,
+                    phone,
+                    status,
+                    totalDeliveries,
+                    rating,
+                    addressText,
+                };
+            }) : [];
+
+            setRiders(normalized);
         } catch (err) {
             console.error("Failed to fetch riders", err);
         } finally {
@@ -114,6 +138,7 @@ export default function AdminRidersPage() {
     };
 
     const openRiderModal = (rider: any) => {
+        // console.log("Opening Rider Modal for:", rider);
         setSelectedRider(rider);
         setModalTab('overview'); // Reset tab
         setModalChartRange('7'); // Reset chart
@@ -121,7 +146,8 @@ export default function AdminRidersPage() {
 
     const filteredRiders = riders.filter(r =>
         r.name.toLowerCase().includes(search.toLowerCase()) ||
-        r.phone.includes(search)
+        r.phone.includes(search) ||
+        (r.addressText || '').toLowerCase().includes(search.toLowerCase())
     );
     // console.log("Filtered Riders:", filteredRiders);
     const getStatusColor = (status: string) => {
@@ -250,7 +276,12 @@ export default function AdminRidersPage() {
                                     <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                         {rider.name}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{rider.phone}</p>
+                                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                                        <Phone size={14} className="text-blue-500" /> {rider.phone || 'N/A'}
+                                    </p>
+                                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                        <MapPin size={12} className="text-orange-500" /> {rider.addressText || 'Address not set'}
+                                    </p>
                                 </div>
                             </div>
                             <span className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize ${getStatusColor(rider.status)}`}>
@@ -263,12 +294,12 @@ export default function AdminRidersPage() {
                                 <p className="text-xs text-gray-500 uppercase font-bold">Deliveries</p>
                                 <p className="text-lg font-bold text-gray-900 dark:text-white">{rider.totalDeliveries}</p>
                             </div>
-                            {/* <div className="text-center">
-                                <p className="text-xs text-gray-500 uppercase font-bold">Rating</p>
+                            <div className="text-center">
+                                <p className="text-xs text-gray-500 uppercase font-bold">Shop</p>
                                 <p className="text-lg font-bold text-yellow-500 flex items-center justify-center gap-1">
-                                    {rider.rating} <Star size={14} fill="currentColor" />
+                                    {rider.shopName}
                                 </p>
-                            </div> */}
+                            </div>
                         </div>
 
                         <div className="mt-auto">
@@ -344,26 +375,23 @@ export default function AdminRidersPage() {
                                             <div className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
                                                 <p className="text-xs text-gray-500 uppercase font-bold mb-1">Zone</p>
                                                 <div className="flex items-center gap-2 text-gray-800 dark:text-white font-medium">
-                                                    <MapPin size={16} className="text-orange-500" /> Civil Lines, Nagpur
+                                                    <MapPin size={16} className="text-orange-500" /> {selectedRider.address.city || 'N/A'} {selectedRider.address.line1 ? `- ${selectedRider.address.line1}` : ''}
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div>
                                             <h3 className="font-bold text-gray-900 dark:text-white mb-3">Performance Stats</h3>
-                                            <div className="grid grid-cols-3 gap-4 text-center">
+                                            <div className="grid grid-cols-2 gap-4 text-center">
                                                 <div className="p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
                                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{selectedRider.totalDeliveries}</p>
                                                     <p className="text-xs text-gray-500">Lifetime Orders</p>
                                                 </div>
                                                 <div className="p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
-                                                    <p className="text-2xl font-bold text-yellow-500">{selectedRider.rating}</p>
-                                                    <p className="text-xs text-gray-500">Avg Rating</p>
+                                                    <p className="text-2xl font-bold text-yellow-500">{selectedRider.shopName}</p>
+                                                    <p className="text-xs text-gray-500">Shop</p>
                                                 </div>
-                                                <div className="p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
-                                                    <p className="text-2xl font-bold text-green-500">98%</p>
-                                                    <p className="text-xs text-gray-500">On-Time Rate</p>
-                                                </div>
+
                                             </div>
                                         </div>
 
