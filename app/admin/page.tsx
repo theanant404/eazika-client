@@ -71,7 +71,7 @@ export default function AdminDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Revenue */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full">
+        <Link href={"/admin/shops"} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-full">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
               <TrendingUp size={20} />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Orders */}
         <Link href="/admin/orders">
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
         </Link>
 
         {/* Shops Pending */}
-        <Link href="/admin/shops">
+        <Link href="/admin/shop-approvals">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer h-full">
             <div className="flex justify-between items-start">
               <div>
@@ -152,75 +152,74 @@ export default function AdminDashboard() {
 
       {/* Analytics Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Main Chart: Revenue & Orders Trend */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Weekly Performance</h3>
-           
-           {/* Simple Bar Chart Implementation */}
-           <div className="h-64 flex items-end justify-between gap-2 sm:gap-4">
-              {stats.revenueTrend?.map((item: any, i: number) => {
-                 const maxVal = Math.max(...stats.revenueTrend.map((d: any) => d.value), 100);
-                 const heightPct = (item.value / maxVal) * 100;
-                 
-                 return (
-                    <div key={i} className="flex flex-col items-center gap-2 flex-1 group relative">
-                       {/* Tooltip */}
-                       <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 pointer-events-none">
-                          ₹{item.value}
-                       </div>
-                       
-                       {/* Bar */}
-                       <div 
-                         className="w-full max-w-[40px] bg-indigo-100 dark:bg-indigo-900/30 rounded-t-lg relative overflow-hidden transition-all duration-500 hover:bg-indigo-200 dark:hover:bg-indigo-800/50"
-                         style={{ height: `${heightPct || 1}%` }} // Min height 1% for visual
-                       >
-                          <div 
-                             className="absolute bottom-0 left-0 right-0 bg-indigo-500 transition-all duration-1000 ease-out"
-                             style={{ height: '100%' }}
-                          />
-                       </div>
-                       <span className="text-xs text-gray-500 font-medium">{item.name}</span>
-                    </div>
-                 )
-              })}
-           </div>
-           
-           <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
-              <div className="flex items-center gap-2">
-                 <span className="w-3 h-3 bg-indigo-500 rounded-full"></span> Revenue
-              </div>
-           </div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Weekly Performance</h3>
+
+          {/* Simple Bar Chart Implementation */}
+          <div className="h-64 flex items-end justify-between gap-2 sm:gap-4">
+            {stats.revenueTrend?.map((item: any, i: number) => {
+              const maxVal = Math.max(...stats.revenueTrend.map((d: any) => d.value), 100);
+              const heightPct = (item.value / maxVal) * 100;
+
+              return (
+                <div key={i} className="flex flex-col items-center gap-2 flex-1 group relative">
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 pointer-events-none">
+                    ₹{item.value}
+                  </div>
+
+                  {/* Bar */}
+                  <div
+                    className="w-full max-w-[40px] bg-indigo-100 dark:bg-indigo-900/30 rounded-t-lg relative overflow-hidden transition-all duration-500 hover:bg-indigo-200 dark:hover:bg-indigo-800/50"
+                    style={{ height: `${heightPct || 1}%` }} // Min height 1% for visual
+                  >
+                    <div
+                      className="absolute bottom-0 left-0 right-0 bg-indigo-500 transition-all duration-1000 ease-out"
+                      style={{ height: '100%' }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 font-medium">{item.name}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-indigo-500 rounded-full"></span> Revenue
+            </div>
+          </div>
         </div>
 
         {/* Side Chart: Order Status */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Order Status</h3>
-            <div className="space-y-4">
-               {(stats as any).orderStatusDistribution?.map((item: any, i: number) => (
-                  <div key={i}>
-                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">{item.name}</span>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{item.value}</span>
-                     </div>
-                     <div className="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div 
-                           className={`h-full rounded-full ${
-                              item.name === 'delivered' ? 'bg-green-500' :
-                              item.name === 'cancelled' ? 'bg-red-500' :
-                              item.name === 'shipped' ? 'bg-blue-500' :
-                              'bg-orange-500'
-                           }`}
-                           style={{ width: `${(item.value / stats.totalOrders) * 100}%` }}
-                        />
-                     </div>
-                  </div>
-               ))}
-               
-               {(!stats as any).orderStatusDistribution?.length && (
-                  <div className="text-center py-10 text-gray-400">No order data yet</div>
-               )}
-            </div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Order Status</h3>
+          <div className="space-y-4">
+            {(stats as any).orderStatusDistribution?.map((item: any, i: number) => (
+              <div key={i}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">{item.name}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">{item.value}</span>
+                </div>
+                <div className="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${item.name === 'delivered' ? 'bg-green-500' :
+                      item.name === 'cancelled' ? 'bg-red-500' :
+                        item.name === 'shipped' ? 'bg-blue-500' :
+                          'bg-orange-500'
+                      }`}
+                    style={{ width: `${(item.value / stats.totalOrders) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+
+            {(!stats as any).orderStatusDistribution?.length && (
+              <div className="text-center py-10 text-gray-400">No order data yet</div>
+            )}
+          </div>
         </div>
 
       </div>
