@@ -21,7 +21,7 @@ import Image from "next/image";
 export default function ShopDashboard() {
   const { currentOders, feathCurrentOrders } = shopStore();
 
-  const [analytics, setAnalytics] = useState<ShopAnalytics["data"]["metrics"] | null>(
+  const [analytics, setAnalytics] = useState<ShopAnalytics["metrics"] | null>(
     null
   );
 
@@ -39,8 +39,8 @@ export default function ShopDashboard() {
           .catch(() => null);
         // console.log("Analytics Data:", analyticsData);
         // Set Analytics
-        if (analyticsData?.data.metrics) {
-          setAnalytics(analyticsData.data.metrics);
+        if (analyticsData?.metrics) {
+          setAnalytics(analyticsData.metrics);
         }
         // console.log("Fetched analytics data:", analyticsData.data.metrics);
       } catch (error) {
