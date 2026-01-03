@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, Variants } from "framer-motion";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ArrowLeft, Loader2, LayoutGrid } from "lucide-react";
 import { ShopService, Category } from "@/services/shopService";
