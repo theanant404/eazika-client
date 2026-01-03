@@ -97,7 +97,7 @@ export default function GlobalProductPage() {
     try {
       setIsLoading(true);
       const response = await AdminService.getAllGlobalProducts(currentPage, 20);
-      console.log("Fetched global products:", response);
+      // console.log("Fetched global products:", response);
       // Align with API shape: some endpoints return `globalProducts`
       setGlobalProducts((response as any).globalProducts || response.products || []);
       setTotalPages(response.pagination?.totalPages || 1);
