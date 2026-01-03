@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { AdminService } from "@/services/adminService";
 import Link from "next/link";
 import {
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const data = await AdminService.getStats();
-        console.log("Fetched dashboard stats:", data);
+        // console.log("Fetched dashboard stats:", data);
         setStats({
           totalSales: Number(data.totalSales) || 0,
           totalOrders: Number(data.totalOrders) || 0,
@@ -78,7 +78,17 @@ export default function AdminDashboard() {
 
     fetchStats();
   }, []);
-
+  // useEffect(() => {
+  //   const uploadProducts = async () => {
+  //     try {
+  //       const response = await AdminService.addGlobalProduct();
+  //       console.log("Upload products response:", response);
+  //     } catch (error) {
+  //       console.error("Failed to upload global products", error);
+  //     }
+  //   };
+  //   // uploadProducts();
+  // }, []);
   if (loading)
     return <div className="p-8 text-center">Loading dashboard...</div>;
 

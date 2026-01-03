@@ -171,4 +171,9 @@ export const AdminService = {
     );
     return response.data.data;
   },
+
+  addGlobalProduct: async () => {
+    const response = await axiosInstance.post("/admin/products/upload-from-json")
+    return response.data;
+  }
 };
