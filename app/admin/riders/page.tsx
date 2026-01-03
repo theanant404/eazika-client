@@ -527,7 +527,7 @@ export default function AdminRidersPage() {
                                                             <div className="text-right">
                                                                 <p className="font-bold text-gray-900 dark:text-white text-sm">₹{order.amount || 0}</p>
                                                                 <span className={`text-[10px] font-bold capitalize ${order.status === 'delivered' ? 'text-green-600' :
-                                                                        order.status === 'cancelled' ? 'text-red-600' : 'text-orange-600'
+                                                                    order.status === 'cancelled' ? 'text-red-600' : 'text-orange-600'
                                                                     }`}>
                                                                     {order.status}
                                                                 </span>
