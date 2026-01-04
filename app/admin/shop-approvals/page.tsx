@@ -108,7 +108,7 @@ export default function AdminShopsPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'active': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+            case 'approved': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
             case 'pending': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
             case 'rejected': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
             case 'suspended': return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
@@ -136,7 +136,7 @@ export default function AdminShopsPage() {
 
             {/* Filter Tabs */}
             <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-                {['all', 'pending', 'active', 'rejected'].map((status) => (
+                {['all', 'pending', 'approved', 'rejected'].map((status) => (
                     <button
                         key={status}
                         onClick={() => setStatusFilter(status)}
