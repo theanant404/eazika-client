@@ -267,8 +267,8 @@ export default function HomePage() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className={`px-4 py-2.5 rounded-full text-sm font-medium border-2 transition-all ${cityInput === city
-                          ? "border-yellow-500 text-white bg-gradient-to-r from-yellow-500 to-orange-500 shadow-md"
-                          : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                        ? "border-yellow-500 text-white bg-gradient-to-r from-yellow-500 to-orange-500 shadow-md"
+                        : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
                         }`}
                     >
                       {city}
@@ -457,7 +457,7 @@ export default function HomePage() {
 
                   return (
                     <Link
-                      href={`/categories/${category.slug}`}
+                      href={`/categories`}
                       key={category.id}
                     >
                       <motion.div
