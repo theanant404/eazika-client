@@ -121,7 +121,7 @@ export default function HomePage() {
     loadData();
   }, [isClient, isLocationVerified, currentCity]);
 
-  // Search Logic
+  // Search Logic with Database Tracking
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setSearchSuggestions([]);
@@ -134,7 +134,26 @@ export default function HomePage() {
         product.category.toLowerCase().includes(lowerQuery)
     );
     setSearchSuggestions(matches.slice(0, 5));
-  }, [searchQuery, products]);
+
+    // Track search in database (debounced)
+    const trackingTimer = setTimeout(async () => {
+      try {
+        await coustomerService.trackSearch({
+          searchQuery,
+          location: currentCity,
+          resultsCount: matches.length,
+          metadata: {
+            hasResults: matches.length > 0,
+            productIds: matches.slice(0, 5).map((p) => p.id),
+          },
+        });
+      } catch (error) {
+        console.error("Failed to track search:", error);
+      }
+    }, 10000); // Track after 1 second of inactivity
+
+    return () => clearTimeout(trackingTimer);
+  }, [searchQuery, products, currentCity]);
 
   const visibleProducts = useMemo(() => {
     // console.log("Calculating visible products:", { productsLength: products?.length, visibleProductCount });
@@ -369,9 +388,28 @@ export default function HomePage() {
                     <ul>
                       {searchSuggestions.map((product) => (
                         <li key={product.id}>
-                          <Link
-                            href={`/products/${product.id}`}
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0"
+                          <button
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              // Track product click from search
+                              try {
+                                await coustomerService.trackSearch({
+                                  searchQuery,
+                                  location: currentCity,
+                                  resultsCount: searchSuggestions.length,
+                                  selectedProductId: product.id,
+                                  metadata: {
+                                    action: "product_clicked",
+                                    resultPosition: searchSuggestions.indexOf(product),
+                                  },
+                                });
+                              } catch (error) {
+                                console.error("Failed to track product click:", error);
+                              }
+                              // Navigate to product
+                              window.location.href = `/products/${product.id}`;
+                            }}
+                            className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0"
                           >
                             <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-700">
                               {product.images && product.images.length > 0 && (
@@ -397,7 +435,7 @@ export default function HomePage() {
                                 ? product.prices[0].price
                                 : "N/A"}
                             </div>
-                          </Link>
+                          </button>
                         </li>
                       ))}
                     </ul>

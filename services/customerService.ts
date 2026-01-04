@@ -112,6 +112,27 @@ const coustomerServices = {
     const response = await axios.get(`/customers/products/filter?filter=${filter}`);
     return response.data.data;
   },
+
+  trackSearch: async (data: {
+    searchQuery: string;
+    location?: string;
+    resultsCount: number;
+    selectedProductId?: number;
+    timestamp?: string;
+    metadata?: Record<string, any>;
+  }): Promise<void> => {
+    try {
+      const response = await axios.post("/customers/search/track", {
+        ...data,
+        timestamp: data.timestamp || new Date().toISOString(),
+      });
+      return response.data;
+    } catch (error) {
+      console.warn("Failed to track search", error);
+      // Don't throw - this shouldn't block user experience
+    }
+  },
+
   cartMethods: allCartMethods,
 };
 
