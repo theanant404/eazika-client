@@ -69,8 +69,6 @@ export default function ProductsPage() {
   const [globalLoadingMore, setGlobalLoadingMore] = useState(false);
   const [activityModalProduct, setActivityModalProduct] = useState<null | { id: number; name: string; isActive: boolean }>(null);
   const [activityLoading, setActivityLoading] = useState(false);
-  const inventorySentinelRef = useRef<HTMLDivElement | null>(null);
-  const globalSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const FALLBACK_PRICE: ProductPriceType = {
     price: 0,
@@ -94,8 +92,17 @@ export default function ProductsPage() {
     totalItems: 0,
     totalPages: 0,
   };
-  const inventoryHasMore = inventoryPagination.currentPage < inventoryPagination.totalPages;
-  const globalHasMore = globalPagination.currentPage < globalPagination.totalPages;
+  const normalizePageNumber = (value: number | string | undefined, fallback = 1) => {
+    const parsed = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+    return parsed;
+  };
+  const inventoryCurrentPage = normalizePageNumber(inventoryPagination.currentPage);
+  const globalCurrentPage = normalizePageNumber(globalPagination.currentPage);
+  const inventoryTotalPages = normalizePageNumber(inventoryPagination.totalPages, 0);
+  const globalTotalPages = normalizePageNumber(globalPagination.totalPages, 0);
+  const inventoryHasMore = inventoryTotalPages === 0 ? true : inventoryCurrentPage < inventoryTotalPages;
+  const globalHasMore = globalTotalPages === 0 ? true : globalCurrentPage < globalTotalPages;
   // console.log("Global Products in component:", globalProducts);
 
   const normalizePricing = (value: unknown): ProductPriceType[] => {
@@ -161,70 +168,25 @@ export default function ProductsPage() {
       if (globalProductList.length === 0)
         await featchGlobalProducts(1, globalPagination.itemsPerPage || 10, false);
     })();
-  }, [
-    fetchProducts,
-    featchGlobalProducts,
-    productList.length,
-    globalProductList.length,
-    inventoryPagination.itemsPerPage,
-    globalPagination.itemsPerPage,
-  ]);
+  }, []);
 
-  const loadMoreInventory = useCallback(async () => {
-    if (inventoryLoadingMore || !inventoryHasMore) return;
+  const loadInventoryPage = useCallback(async (page: number) => {
     setInventoryLoadingMore(true);
-    const nextPage = (inventoryPagination.currentPage || 1) + 1;
-    await fetchProducts(nextPage, inventoryPagination.itemsPerPage || 10, true);
-    setInventoryLoadingMore(false);
-  }, [
-    fetchProducts,
-    inventoryHasMore,
-    inventoryLoadingMore,
-    inventoryPagination.currentPage,
-    inventoryPagination.itemsPerPage,
-  ]);
+    try {
+      await fetchProducts(page, inventoryPagination.itemsPerPage || 10, false);
+    } finally {
+      setInventoryLoadingMore(false);
+    }
+  }, [fetchProducts, inventoryPagination.itemsPerPage]);
 
-  const loadMoreGlobal = useCallback(async () => {
-    if (globalLoadingMore || !globalHasMore) return;
+  const loadGlobalPage = useCallback(async (page: number) => {
     setGlobalLoadingMore(true);
-    const nextPage = (globalPagination.currentPage || 1) + 1;
-    await featchGlobalProducts(nextPage, globalPagination.itemsPerPage || 10, true);
-    setGlobalLoadingMore(false);
-  }, [
-    featchGlobalProducts,
-    globalHasMore,
-    globalLoadingMore,
-    globalPagination.currentPage,
-    globalPagination.itemsPerPage,
-  ]);
-
-  useEffect(() => {
-    if (activeTab !== "inventory" && activeTab !== "my_products") return;
-    const sentinel = inventorySentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMoreInventory();
-      },
-      { root: null, rootMargin: "200px", threshold: 0 }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [activeTab, loadMoreInventory]);
-
-  useEffect(() => {
-    if (activeTab !== "global") return;
-    const sentinel = globalSentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMoreGlobal();
-      },
-      { root: null, rootMargin: "200px", threshold: 0 }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [activeTab, loadMoreGlobal]);
+    try {
+      await featchGlobalProducts(page, globalPagination.itemsPerPage || 10, false);
+    } finally {
+      setGlobalLoadingMore(false);
+    }
+  }, [featchGlobalProducts, globalPagination.itemsPerPage]);
 
   const openEditModal = async (id: number | string) => {
     const numericId = Number(id);
@@ -665,14 +627,40 @@ export default function ProductsPage() {
         </table>
       )}
       {(activeTab === "inventory" || activeTab === "my_products") && (
-        <div className="flex items-center justify-center py-4">
-          {inventoryLoadingMore && <span className="text-sm text-gray-500">Loading more products...</span>}
-          {!inventoryHasMore && productList.length > 0 && (
-            <span className="text-sm text-gray-500">No more products</span>
-          )}
+        <div className="fixed bottom-0 left-0 right-0 bg-transparent py-4 px-4 md:px-8 z-40">
+          <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => loadInventoryPage(inventoryCurrentPage - 1)}
+                disabled={inventoryCurrentPage <= 1 || inventoryLoadingMore}
+                className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                ← Previous
+              </button>
+              <button
+                onClick={() => loadInventoryPage(inventoryCurrentPage + 1)}
+                disabled={!inventoryHasMore || inventoryLoadingMore}
+                className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Next →
+              </button>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              {inventoryLoadingMore ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin" size={16} />
+                  Loading...
+                </span>
+              ) : (
+                <span>
+                  Page {inventoryCurrentPage} of {inventoryTotalPages}
+                  <span className="ml-2 text-xs">({inventoryPagination.totalItems} total)</span>
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       )}
-      <div ref={inventorySentinelRef} className="h-2" />
       {activeTab === "global" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
@@ -743,14 +731,40 @@ export default function ProductsPage() {
         </div>
       )}
       {activeTab === "global" && (
-        <div className="flex items-center justify-center py-4">
-          {globalLoadingMore && <span className="text-sm text-gray-500">Loading more products...</span>}
-          {!globalHasMore && globalProductList.length > 0 && (
-            <span className="text-sm text-gray-500">No more products</span>
-          )}
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-4 md:px-8 z-40">
+          <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => loadGlobalPage(globalCurrentPage - 1)}
+                disabled={globalCurrentPage <= 1 || globalLoadingMore}
+                className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                ← Previous
+              </button>
+              <button
+                onClick={() => loadGlobalPage(globalCurrentPage + 1)}
+                disabled={!globalHasMore || globalLoadingMore}
+                className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Next →
+              </button>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              {globalLoadingMore ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin" size={16} />
+                  Loading...
+                </span>
+              ) : (
+                <span>
+                  Page {globalCurrentPage} of {globalTotalPages}
+                  <span className="ml-2 text-xs">({globalPagination.totalItems} total)</span>
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       )}
-      <div ref={globalSentinelRef} className="h-2" />
       {activeTab === "my_products" &&
         productList.filter((p) => p.isGlobalProduct != true && p.isActive !== false).length >
         0 && (
