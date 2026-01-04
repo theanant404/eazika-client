@@ -50,6 +50,17 @@ export default function ProductsPage() {
   >("inventory");
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<{
+    inventory: ShopProduct[];
+    global: ShopProduct[];
+    myProducts: ShopProduct[];
+  }>({
+    inventory: [],
+    global: [],
+    myProducts: [],
+  });
+  const [hasSearched, setHasSearched] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editInitialData, setEditInitialData] = useState<
@@ -169,6 +180,47 @@ export default function ProductsPage() {
         await featchGlobalProducts(1, globalPagination.itemsPerPage || 10, false);
     })();
   }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    const debounceTimer = setTimeout(async () => {
+      if (searchQuery.trim() === "") {
+        setSearchResults({ inventory: [], global: [], myProducts: [] });
+        setHasSearched(false);
+        return;
+      }
+
+      try {
+        setSearchLoading(true);
+        setHasSearched(true);
+
+        // Make API calls for all tabs
+        const [inventoryRes, globalRes] = await Promise.all([
+          shopService.searchShopProducts(searchQuery, 1, 50),
+          shopService.searchGlobalProducts(searchQuery, 1, 50),
+        ]);
+
+        // Filter my products from inventory results
+        const myProducts = inventoryRes.products?.filter(
+          (p: ShopProduct) => p.isGlobalProduct !== true && p.isActive !== false
+        ) || [];
+
+        setSearchResults({
+          inventory: inventoryRes.products || [],
+          global: globalRes.products || [],
+          myProducts: myProducts,
+        });
+      } catch (error) {
+        console.error("Search failed:", error);
+        toast.error("Search failed. Please try again.");
+        setSearchResults({ inventory: [], global: [], myProducts: [] });
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
 
   const loadInventoryPage = useCallback(async (page: number) => {
     setInventoryLoadingMore(true);
@@ -355,10 +407,38 @@ export default function ProductsPage() {
     setExitPromptOpen(true);
   };
 
-  const filteredProducts = productList.filter((p) => {
-    const name = (p as { name?: string })?.name || "";
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  // Filter products based on active tab and search query
+  // Use API search results if search is active, otherwise use local filtering
+  const filteredInventoryProducts = hasSearched
+    ? searchResults.inventory
+    : productList.filter((p) => {
+      const name = (p as { name?: string })?.name || "";
+      return name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+  const filteredGlobalProducts = hasSearched
+    ? searchResults.global
+    : globalProductList.filter((p) => {
+      const name = (p as { name?: string })?.name || "";
+      return name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+  const filteredMyProducts = hasSearched
+    ? searchResults.myProducts
+    : productList
+      .filter((p) => p.isGlobalProduct !== true && p.isActive !== false)
+      .filter((p) => {
+        const name = (p as { name?: string })?.name || "";
+        return name.toLowerCase().includes(searchQuery.toLowerCase());
+      });
+
+  // Use the appropriate filtered list based on active tab
+  const filteredProducts =
+    activeTab === "inventory"
+      ? filteredInventoryProducts
+      : activeTab === "global"
+        ? filteredGlobalProducts
+        : filteredMyProducts;
 
   const handleAddProductFromGlobalProducts = (product: (typeof globalProductList)[number]) => {
     setSelectedGlobalProduct(product);
@@ -390,7 +470,10 @@ export default function ProductsPage() {
             <button
               key={tab.id}
               onClick={() => {
-                attemptNavigate(() => setActiveTab(tab.id));
+                attemptNavigate(() => {
+                  setActiveTab(tab.id);
+                  setSearchQuery(""); // Clear search when switching tabs
+                });
               }}
               className={`flex flex-col items-start p-5 rounded-2xl border-2 transition-all text-left relative overflow-hidden group ${isActive
                 ? "bg-gray-900 dark:bg-white border-gray-900 dark:border-white text-white dark:text-gray-900 shadow-lg"
@@ -430,6 +513,12 @@ export default function ProductsPage() {
           className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
           size={20}
         />
+        {searchLoading && (
+          <Loader2
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 animate-spin"
+            size={20}
+          />
+        )}
         <input
           type="text"
           placeholder={`Search in ${activeTab.replace("_", " ")}...`}
@@ -439,192 +528,202 @@ export default function ProductsPage() {
         />
       </div>
       {activeTab === "inventory" && productList.length > 0 && (
-        <table className="w-full text-left mt-8 border-collapse">
-          <thead className="bg-gray-100 dark:bg-gray-700">
-            <tr>
-              <th className="border-b p-4">Product Image</th>
-              <th className="border-b p-4">Product Name</th>
-              <th className="border-b p-4">Product Category</th>
-              <th className="border-b p-4"> Brand </th>
-              <th className="border-b p-4">Reating</th>
-              <th className="border-b p-4">Is Active</th>
-              <th className="border-b p-4">Is Global Product</th>
-              <th className="border-b p-4">Pricing</th>
-              <th className="border-b p-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white m-5 p-6 dark:bg-gray-800 rounded-2xl  md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700">
-            {filteredProducts.map((product) => (
+        <>
+          {hasSearched && filteredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-lg">
+                No products found for "{searchQuery}"
+              </p>
+            </div>
+          ) : (
+            <table className="w-full text-left mt-8 border-collapse">
+              <thead className="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                  <th className="border-b p-4">Product Image</th>
+                  <th className="border-b p-4">Product Name</th>
+                  <th className="border-b p-4">Product Category</th>
+                  <th className="border-b p-4"> Brand </th>
+                  <th className="border-b p-4">Reating</th>
+                  <th className="border-b p-4">Is Active</th>
+                  <th className="border-b p-4">Is Global Product</th>
+                  <th className="border-b p-4">Pricing</th>
+                  <th className="border-b p-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white m-5 p-6 dark:bg-gray-800 rounded-2xl  md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700">
+                {filteredProducts.map((product) => (
 
-              <tr key={product.id}>
-                <td className="border-b p-4">
-                  <Image
-                    src={product.images[0]}
-                    alt={product.name}
-                    width={50}
-                    height={50}
-                    className="rounded-lg"
-                  />
-                </td>
-                <td className="border-b p-4">{product.name}</td>
-                <td className="border-b p-4">{product.category}</td>
-                <td className="border-b p-4">{product.brand}</td>
-                <td className="border-b p-4">{typeof product.rating === "object" ? product.rating?.rate ?? "N/A" : product.rating ?? "N/A"}</td>
-                <td className="border-b p-4 "><span className="">{product.isActive ? "Yes" : "No"}</span></td>
-                <td className="border-b p-4">
-                  {product.isGlobalProduct ? "Yes" : "No"}
-                </td>
-                <td className="border-b p-4">
-                  <table className="mb-2 w-full border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="border p-2">Id</th>
-                        <th className="border p-2">Price (₹)</th>
-                        <th className="border p-2">Discount (%)</th>
-                        <th className="border p-2">Weight</th>
-                        <th className="border p-2">Unit</th>
-                        <th className="border p-2">Stock</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(editablePricing[Number(product.id)] ?? (product as any).pricing ?? (product as any).prices ?? []).map(
-                        (price, index) => (
-                          <tr key={index}>
-                            <td className="border p-2">{price.id ?? index + 1}</td>
-                            <td className="border p-2">
-                              <input
-                                type="number"
-                                className="w-full bg-transparent outline-none"
-                                value={price.price}
-                                onChange={(e) =>
-                                  handlePricingChange(
-                                    Number(product.id),
-                                    index,
-                                    "price",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="border p-2">
-                              <input
-                                type="number"
-                                className="w-full bg-transparent outline-none"
-                                value={price.discount || 0}
-                                onChange={(e) =>
-                                  handlePricingChange(
-                                    Number(product.id),
-                                    index,
-                                    "discount",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="border p-2">
-                              <input
-                                type="number"
-                                className="w-full bg-transparent outline-none"
-                                value={price.weight}
-                                onChange={(e) =>
-                                  handlePricingChange(
-                                    Number(product.id),
-                                    index,
-                                    "weight",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                              />
-                            </td>
-                            <td className="border p-2">
-                              <select
-                                className="w-full bg-transparent outline-none"
-                                value={price.unit}
-                                onChange={(e) =>
-                                  handlePricingChange(
-                                    Number(product.id),
-                                    index,
-                                    "unit",
-                                    e.target.value as ProductPriceType["unit"]
-                                  )
-                                }
-                              >
-                                <option value="grams">grams</option>
-                                <option value="kg">kg</option>
-                                <option value="ml">ml</option>
-                                <option value="litre">litre</option>
-                                <option value="piece">piece</option>
-                              </select>
-                            </td>
-                            <td className="border p-2">
-                              <input
-                                type="number"
-                                className="w-full bg-transparent outline-none"
-                                value={price.stock}
-                                onChange={(e) =>
-                                  handlePricingChange(
-                                    Number(product.id),
-                                    index,
-                                    "stock",
-                                    parseInt(e.target.value, 10) || 0
-                                  )
-                                }
-                              />
-                            </td>
+                  <tr key={product.id}>
+                    <td className="border-b p-4">
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        width={50}
+                        height={50}
+                        className="rounded-lg"
+                      />
+                    </td>
+                    <td className="border-b p-4">{product.name}</td>
+                    <td className="border-b p-4">{product.category}</td>
+                    <td className="border-b p-4">{product.brand}</td>
+                    <td className="border-b p-4">{typeof product.rating === "object" ? product.rating?.rate ?? "N/A" : product.rating ?? "N/A"}</td>
+                    <td className="border-b p-4 "><span className="">{product.isActive ? "Yes" : "No"}</span></td>
+                    <td className="border-b p-4">
+                      {product.isGlobalProduct ? "Yes" : "No"}
+                    </td>
+                    <td className="border-b p-4">
+                      <table className="mb-2 w-full border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="border p-2">Id</th>
+                            <th className="border p-2">Price (₹)</th>
+                            <th className="border p-2">Discount (%)</th>
+                            <th className="border p-2">Weight</th>
+                            <th className="border p-2">Unit</th>
+                            <th className="border p-2">Stock</th>
                           </tr>
-                        )
-                      )}
-                    </tbody>
-                  </table>
-                </td>
-                <td className="border-b p-4">
-                  <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(product.id)}
-                      className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition"
-                    >
-                      <Edit />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => savePricing(Number(product.id))}
-                      disabled={!dirtyProductIds.has(Number(product.id))}
-                      className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-green-600 disabled:bg-gray-400 rounded-lg shadow-sm hover:opacity-90 transition"
-                    >
-                      <Save />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActivityModalProduct({
-                          id: Number(product.id),
-                          name: product.name,
-                          isActive: Boolean(product.isActive),
-                        })
-                      }
-                      className={`inline-flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-full shadow-sm transition border ${product.isActive
-                        ? "bg-green-100 text-green-800 border-green-200"
-                        : "bg-red-100 text-red-800 border-red-200"
-                        }`}
-                    >
-                      <span>{product.isActive ? "Active" : "Inactive"}</span>
-                      <span
-                        className={`ml-3 inline-flex h-5 w-10 items-center rounded-full p-0.5 transition ${product.isActive ? "bg-green-500" : "bg-red-500"
-                          }`}
-                      >
-                        <span
-                          className={`h-4 w-4 rounded-full bg-white shadow transform transition ${product.isActive ? "translate-x-5" : "translate-x-0"
+                        </thead>
+                        <tbody>
+                          {(editablePricing[Number(product.id)] ?? (product as any).pricing ?? (product as any).prices ?? []).map(
+                            (price, index) => (
+                              <tr key={index}>
+                                <td className="border p-2">{price.id ?? index + 1}</td>
+                                <td className="border p-2">
+                                  <input
+                                    type="number"
+                                    className="w-full bg-transparent outline-none"
+                                    value={price.price}
+                                    onChange={(e) =>
+                                      handlePricingChange(
+                                        Number(product.id),
+                                        index,
+                                        "price",
+                                        parseFloat(e.target.value) || 0
+                                      )
+                                    }
+                                  />
+                                </td>
+                                <td className="border p-2">
+                                  <input
+                                    type="number"
+                                    className="w-full bg-transparent outline-none"
+                                    value={price.discount || 0}
+                                    onChange={(e) =>
+                                      handlePricingChange(
+                                        Number(product.id),
+                                        index,
+                                        "discount",
+                                        parseFloat(e.target.value) || 0
+                                      )
+                                    }
+                                  />
+                                </td>
+                                <td className="border p-2">
+                                  <input
+                                    type="number"
+                                    className="w-full bg-transparent outline-none"
+                                    value={price.weight}
+                                    onChange={(e) =>
+                                      handlePricingChange(
+                                        Number(product.id),
+                                        index,
+                                        "weight",
+                                        parseFloat(e.target.value) || 0
+                                      )
+                                    }
+                                  />
+                                </td>
+                                <td className="border p-2">
+                                  <select
+                                    className="w-full bg-transparent outline-none"
+                                    value={price.unit}
+                                    onChange={(e) =>
+                                      handlePricingChange(
+                                        Number(product.id),
+                                        index,
+                                        "unit",
+                                        e.target.value as ProductPriceType["unit"]
+                                      )
+                                    }
+                                  >
+                                    <option value="grams">grams</option>
+                                    <option value="kg">kg</option>
+                                    <option value="ml">ml</option>
+                                    <option value="litre">litre</option>
+                                    <option value="piece">piece</option>
+                                  </select>
+                                </td>
+                                <td className="border p-2">
+                                  <input
+                                    type="number"
+                                    className="w-full bg-transparent outline-none"
+                                    value={price.stock}
+                                    onChange={(e) =>
+                                      handlePricingChange(
+                                        Number(product.id),
+                                        index,
+                                        "stock",
+                                        parseInt(e.target.value, 10) || 0
+                                      )
+                                    }
+                                  />
+                                </td>
+                              </tr>
+                            )
+                          )}
+                        </tbody>
+                      </table>
+                    </td>
+                    <td className="border-b p-4">
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(product.id)}
+                          className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition"
+                        >
+                          <Edit />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => savePricing(Number(product.id))}
+                          disabled={!dirtyProductIds.has(Number(product.id))}
+                          className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-green-600 disabled:bg-gray-400 rounded-lg shadow-sm hover:opacity-90 transition"
+                        >
+                          <Save />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivityModalProduct({
+                              id: Number(product.id),
+                              name: product.name,
+                              isActive: Boolean(product.isActive),
+                            })
+                          }
+                          className={`inline-flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-full shadow-sm transition border ${product.isActive
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-red-100 text-red-800 border-red-200"
                             }`}
-                        />
-                      </span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                        >
+                          <span>{product.isActive ? "Active" : "Inactive"}</span>
+                          <span
+                            className={`ml-3 inline-flex h-5 w-10 items-center rounded-full p-0.5 transition ${product.isActive ? "bg-green-500" : "bg-red-500"
+                              }`}
+                          >
+                            <span
+                              className={`h-4 w-4 rounded-full bg-white shadow transform transition ${product.isActive ? "translate-x-5" : "translate-x-0"
+                                }`}
+                            />
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
       {(activeTab === "inventory" || activeTab === "my_products") && (
         <div className="fixed bottom-0 left-0 right-0 bg-transparent py-4 px-4 md:px-8 z-40">
@@ -662,73 +761,83 @@ export default function ProductsPage() {
         </div>
       )}
       {activeTab === "global" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AnimatePresence mode="popLayout">
-            {globalProductList.filter((product) => product.isActive !== false).map((product) => {
-              const alreadyAdded = productList.some((p) => p.globalProductId === product.id);
-              // console.log(alreadyAdded)
-              const firstImage = product.images?.[0] || "/placeholder.png";
-              return (
-                <motion.div
-                  key={product.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700"
-                >
-                  <div className="flex gap-3 md:gap-4 ">
-                    <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shrink-0 self-start">
-                      <Image
-                        src={firstImage}
-                        alt={product.name}
-                        layout="fill"
-                        objectFit="cover"
-                      />
-                    </div>
-
-                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                      <div>
-                        <div className="flex justify-between items-start mb-1">
-                          <h3
-                            className="font-bold text-gray-900 dark:text-white text-sm md:text-base line-clamp-2 leading-tight mr-6"
-                            title={product.name}
-                          >
-                            {product.name}
-                          </h3>
+        <>
+          {hasSearched && filteredGlobalProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-lg">
+                No products found for "{searchQuery}"
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <AnimatePresence mode="popLayout">
+                {filteredGlobalProducts.filter((product) => product.isActive !== false).map((product) => {
+                  const alreadyAdded = productList.some((p) => p.globalProductId === product.id);
+                  // console.log(alreadyAdded)
+                  const firstImage = product.images?.[0] || "/placeholder.png";
+                  return (
+                    <motion.div
+                      key={product.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700"
+                    >
+                      <div className="flex gap-3 md:gap-4 ">
+                        <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shrink-0 self-start">
+                          <Image
+                            src={firstImage}
+                            alt={product.name}
+                            layout="fill"
+                            objectFit="cover"
+                          />
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {product.category}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="mt-3 flex flex-wrap items-end justify-start gap-y-2">
-                    <div className="flex items-center gap-2"></div>
-                    {alreadyAdded ? (
-                      <button
-                        disabled
-                        className="bg-green-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-default"
-                      >
-                        <Check size={14} /> Added
-                      </button>
-                    ) : (
-                      <button onClick={() => handleAddProductFromGlobalProducts(product)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 active:scale-95">
-                        <Plus size={14} /> Add
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-          {globalProductList.length === 0 && (
-            <div className="col-span-full text-center text-sm text-gray-500 dark:text-gray-400 py-6">
-              No global products available.
+                        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                          <div>
+                            <div className="flex justify-between items-start mb-1">
+                              <h3
+                                className="font-bold text-gray-900 dark:text-white text-sm md:text-base line-clamp-2 leading-tight mr-6"
+                                title={product.name}
+                              >
+                                {product.name}
+                              </h3>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {product.category}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-end justify-start gap-y-2">
+                        <div className="flex items-center gap-2"></div>
+                        {alreadyAdded ? (
+                          <button
+                            disabled
+                            className="bg-green-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-default"
+                          >
+                            <Check size={14} /> Added
+                          </button>
+                        ) : (
+                          <button onClick={() => handleAddProductFromGlobalProducts(product)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 active:scale-95">
+                            <Plus size={14} /> Add
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+              {globalProductList.length === 0 && (
+                <div className="col-span-full text-center text-sm text-gray-500 dark:text-gray-400 py-6">
+                  No global products available.
+                </div>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
       {activeTab === "global" && (
         <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-4 md:px-8 z-40">
@@ -765,88 +874,102 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-      {activeTab === "my_products" &&
-        productList.filter((p) => p.isGlobalProduct != true && p.isActive !== false).length >
-        0 && (
-          <table className="w-full text-left mt-8 border-collapse">
-            <thead className="">
-              <tr>
-                <th className="border-b p-4">Product Image</th>
-                <th className="border-b p-4">Product Name</th>
-                <th className="border-b p-4">Product Category</th>
-                <th className="border-b p-4">Brand </th>
-                <th className="border-b p-4">Rating </th>
-                <th className="border-b p-4">Is Active</th>
+      {activeTab === "my_products" && (
+        <>
+          {hasSearched && filteredMyProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-lg">
+                No products found for "{searchQuery}"
+              </p>
+            </div>
+          ) : filteredMyProducts.length > 0 ? (
+            <table className="w-full text-left mt-8 border-collapse">
+              <thead className="">
+                <tr>
+                  <th className="border-b p-4">Product Image</th>
+                  <th className="border-b p-4">Product Name</th>
+                  <th className="border-b p-4">Product Category</th>
+                  <th className="border-b p-4">Brand </th>
+                  <th className="border-b p-4">Rating </th>
+                  <th className="border-b p-4">Is Active</th>
 
-                <th className="border-b p-4">Pricing</th>
-                <th className="border-b p-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.filter((p) => p.isGlobalProduct != true && p.isActive !== false).map((product) => (
-                <tr
-                  key={product.id}
-                  className="bg-white m-5 p-6 dark:bg-gray-800 rounded-2xl  md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700"
-                >
-                  <td className="border-b p-4">
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      width={50}
-                      height={50}
-                      className="rounded-lg"
-                    />
-                  </td>
-                  <td className="border-b p-4">{product.name}</td>
-                  <td className="border-b p-4">{product.category}</td>
-                  <td className="border-b p-4">{product.brand}</td>
-                  <td className="border-b p-4">{typeof product.rating === "object" ? product.rating?.rate ?? "N/A" : product.rating ?? "N/A"}</td>
-                  <td className="border-b p-4">
-                    {product.isActive ? "Yes" : "No"}
-                  </td>
-
-                  <td className="border-b p-4">
-                    <table className="mb-2 w-full border-collapse">
-                      <thead>
-                        <tr>
-                          <th className="border p-2">Id</th>
-                          <th className="border p-2">Price (₹)</th>
-                          <th className="border p-2">Discount (%)</th>
-                          <th className="border p-2">Weight</th>
-                          <th className="border p-2">Unit</th>
-                          <th className="border p-2">Stock</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(product as any).pricing?.map((price: any, index: number) => (
-                          <tr key={index}>
-                            <td className="border p-2">{index + 1}</td>
-                            <td className="border p-2">{price.price}</td>
-                            <td className="border p-2">
-                              {price.discount || 0}
-                            </td>
-                            <td className="border p-2">{price.weight}</td>
-                            <td className="border p-2">{price.unit}</td>
-                            <td className="border p-2">{price.stock}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </td>
-                  <td className="border-b p-4">
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(product.id)}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition"
-                    >
-                      Edit
-                    </button>
-                  </td>
+                  <th className="border-b p-4">Pricing</th>
+                  <th className="border-b p-4">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {filteredMyProducts.map((product) => (
+                  <tr
+                    key={product.id}
+                    className="bg-white m-5 p-6 dark:bg-gray-800 rounded-2xl  md:p-4 border shadow-sm transition-all w-full border-gray-100 dark:border-gray-700"
+                  >
+                    <td className="border-b p-4">
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        width={50}
+                        height={50}
+                        className="rounded-lg"
+                      />
+                    </td>
+                    <td className="border-b p-4">{product.name}</td>
+                    <td className="border-b p-4">{product.category}</td>
+                    <td className="border-b p-4">{product.brand}</td>
+                    <td className="border-b p-4">{typeof product.rating === "object" ? product.rating?.rate ?? "N/A" : product.rating ?? "N/A"}</td>
+                    <td className="border-b p-4">
+                      {product.isActive ? "Yes" : "No"}
+                    </td>
+
+                    <td className="border-b p-4">
+                      <table className="mb-2 w-full border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="border p-2">Id</th>
+                            <th className="border p-2">Price (₹)</th>
+                            <th className="border p-2">Discount (%)</th>
+                            <th className="border p-2">Weight</th>
+                            <th className="border p-2">Unit</th>
+                            <th className="border p-2">Stock</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(product as any).pricing?.map((price: any, index: number) => (
+                            <tr key={index}>
+                              <td className="border p-2">{index + 1}</td>
+                              <td className="border p-2">{price.price}</td>
+                              <td className="border p-2">
+                                {price.discount || 0}
+                              </td>
+                              <td className="border p-2">{price.weight}</td>
+                              <td className="border p-2">{price.unit}</td>
+                              <td className="border p-2">{price.stock}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </td>
+                    <td className="border-b p-4">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(product.id)}
+                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg shadow-sm hover:opacity-90 transition"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-lg">
+                No custom products yet. Create your first product!
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
       {exitPromptOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">

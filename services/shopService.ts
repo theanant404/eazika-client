@@ -508,6 +508,44 @@ export const ShopService = {
     return response.data.data;
   },
 
+  searchShopProducts: async (
+    searchQuery: string,
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<ShopProductListType> => {
+    const params = new URLSearchParams();
+    params.append("search", String(searchQuery));
+    params.append("pagination[currentPage]", String(page));
+    params.append("pagination[itemsPerPage]", String(limit));
+    params.append("currentPage", String(page));
+    params.append("itemsPerPage", String(limit));
+    params.append("page", String(page));
+    params.append("limit", String(limit));
+    const response = await axios.get(
+      `/shops/products/search-shop-products?${params.toString()}`
+    );
+    return response.data.data;
+  },
+
+  searchGlobalProducts: async (
+    searchQuery: string,
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<GlobalProductListType> => {
+    const params = new URLSearchParams();
+    params.append("search", String(searchQuery));
+    params.append("pagination[currentPage]", String(page));
+    params.append("pagination[itemsPerPage]", String(limit));
+    params.append("currentPage", String(page));
+    params.append("itemsPerPage", String(limit));
+    params.append("page", String(page));
+    params.append("limit", String(limit));
+    const response = await axios.get(
+      `/shops/products/search-global-products?${params.toString()}`
+    );
+    return response.data.data;
+  },
+
   // --- ORDER MANAGEMENT ---
   getShopOrders: async (
     pageOrStatus: number | string = 1,
