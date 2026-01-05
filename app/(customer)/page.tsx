@@ -140,7 +140,7 @@ export default function HomePage() {
       try {
         await coustomerService.trackSearch({
           searchQuery,
-          location: currentCity,
+          location: currentCity ?? undefined,
           resultsCount: matches.length,
           metadata: {
             hasResults: matches.length > 0,
@@ -395,9 +395,9 @@ export default function HomePage() {
                               try {
                                 await coustomerService.trackSearch({
                                   searchQuery,
-                                  location: currentCity,
+                                  location: currentCity ?? undefined,
                                   resultsCount: searchSuggestions.length,
-                                  selectedProductId: product.id,
+                                  selectedProductId: typeof product.id === 'number' ? product.id : Number(product.id),
                                   metadata: {
                                     action: "product_clicked",
                                     resultPosition: searchSuggestions.indexOf(product),
