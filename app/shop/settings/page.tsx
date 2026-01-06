@@ -6,6 +6,7 @@ import { userStore } from "@/store/userStore";
 import ShopService, { shopService } from "@/services/shopService";
 import type { Address } from "@/types/user";
 import Image from "next/image";
+import LogoutButton from "@/components/LogoutButton";
 
 type WeeklySlot = {
     day: string;
@@ -387,45 +388,53 @@ export default function ShopSettingsPage() {
 
     return (
         <div className="max-w-5xl mx-auto space-y-8 pb-16 px-2 md:px-0">
-            {shopProfile && (
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-sm space-y-3">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            {shopProfile.coverPhoto ? (
-                                <Image
-                                    src={shopProfile.coverPhoto || ""}
-                                    width={200}
-                                    height={200}
-                                    alt={shopProfile.name || "Shop cover"}
-                                    className="h-16 w-16 rounded-xl object-cover border border-gray-200 dark:border-gray-700"
-                                />
-                            ) : (
-                                <div className="h-16 w-16 rounded-xl bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-sm font-semibold text-gray-500">
-                                    Logo
+            <div className="sm:flex sm:flex-row flex-col-reverse">
+                <div>
+                    {shopProfile && (
+                        <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-sm space-y-3">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    {shopProfile.coverPhoto ? (
+                                        <Image
+                                            src={shopProfile.coverPhoto || ""}
+                                            width={200}
+                                            height={200}
+                                            alt={shopProfile.name || "Shop cover"}
+                                            className="h-16 w-16 rounded-xl object-cover border border-gray-200 dark:border-gray-700"
+                                        />
+                                    ) : (
+                                        <div className="h-16 w-16 rounded-xl bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-sm font-semibold text-gray-500">
+                                            Logo
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h1 className="text-xl font-bold text-gray-900 dark:text-white">{shopProfile.name || "Shop"}</h1>
+                                        <p className="text-sm text-gray-500">{shopProfile.category || "Category"}</p>
+                                    </div>
                                 </div>
-                            )}
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-900 dark:text-white">{shopProfile.name || "Shop"}</h1>
-                                <p className="text-sm text-gray-500">{shopProfile.category || "Category"}</p>
+                                <div className="text-sm text-gray-700 dark:text-gray-200 space-y-1">
+                                    {shopProfile.phone && <p className="font-semibold">📞 {shopProfile.phone}</p>}
+                                    {shopProfile.ownerName && <p>Owner: {shopProfile.ownerName}</p>}
+                                    {shopProfile.address && (
+                                        <p className="text-gray-600 dark:text-gray-300">
+                                            {[shopProfile.address.line1, shopProfile.address.street, shopProfile.address.city]
+                                                .filter(Boolean)
+                                                .join(", ")}
+                                            {shopProfile.address.state ? `, ${shopProfile.address.state}` : ""}
+                                            {shopProfile.address.country ? `, ${shopProfile.address.country}` : ""}
+                                            {shopProfile.address.pinCode ? ` - ${shopProfile.address.pinCode}` : ""}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                        <div className="text-sm text-gray-700 dark:text-gray-200 space-y-1">
-                            {shopProfile.phone && <p className="font-semibold">📞 {shopProfile.phone}</p>}
-                            {shopProfile.ownerName && <p>Owner: {shopProfile.ownerName}</p>}
-                            {shopProfile.address && (
-                                <p className="text-gray-600 dark:text-gray-300">
-                                    {[shopProfile.address.line1, shopProfile.address.street, shopProfile.address.city]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    {shopProfile.address.state ? `, ${shopProfile.address.state}` : ""}
-                                    {shopProfile.address.country ? `, ${shopProfile.address.country}` : ""}
-                                    {shopProfile.address.pinCode ? ` - ${shopProfile.address.pinCode}` : ""}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </section>
-            )}
+                        </section>
+                    )}
+                </div>
+                <div>
+                    <LogoutButton />
+                </div>
+            </div>
+
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shop Settings</h1>
