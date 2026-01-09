@@ -179,7 +179,7 @@ export default function ShopDashboard() {
       {/* Recent Orders Section */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col min-h-[300px]">
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             <h2 className="font-bold text-lg text-gray-900 dark:text-white">
               Recent Orders
             </h2>
