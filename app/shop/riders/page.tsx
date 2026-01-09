@@ -45,6 +45,8 @@ export default function RidersPage() {
     // Rider Details Modal State
     const [selectedRider, setSelectedRider] = useState<ShopRider | null>(null);
     const [modalTab, setModalTab] = useState<'overview' | 'analytics' | 'history' | 'docs'>('overview');
+    const [riderAnalytics, setRiderAnalytics] = useState<any>(null);
+    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
     useEffect(() => {
         fetchRiders();
@@ -108,9 +110,22 @@ export default function RidersPage() {
         setInviteSent(false);
     };
 
-    const openRiderModal = (rider: ShopRider) => {
+    const openRiderModal = async (rider: ShopRider) => {
         setSelectedRider(rider);
         setModalTab('overview');
+
+        // Fetch rider analytics data
+        try {
+            setIsLoadingAnalytics(true);
+            const analysisData = await ShopService.getRiderAnalyticsById(rider.id);
+            // console.log("Rider Analytics Data:", analysisData);
+            setRiderAnalytics(analysisData);
+        } catch (error) {
+            console.error("Failed to fetch rider analytics:", error);
+            setRiderAnalytics(null);
+        } finally {
+            setIsLoadingAnalytics(false);
+        }
     };
 
     const handleSuspend = async (riderId: number) => {
@@ -533,24 +548,24 @@ export default function RidersPage() {
                                 {/* TAB: OVERVIEW */}
                                 {modalTab === 'overview' && (
                                     <div className="space-y-6">
-                                        {selectedRider.status !== 'pending' && (
+                                        {selectedRider.status !== 'pending' && riderAnalytics?.metrics && (
                                             <div>
                                                 <h3 className="font-bold text-gray-900 dark:text-white mb-3">Performance Stats</h3>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                                                     <div className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg">
-                                                        <p className="text-2xl font-bold text-green-600">{selectedRider.totalOrdersAccepted || 0}</p>
+                                                        <p className="text-2xl font-bold text-green-600">{riderAnalytics.metrics.ordersAccepted || 0}</p>
                                                         <p className="text-xs text-gray-500 mt-1">Orders Accepted</p>
                                                     </div>
                                                     <div className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg">
-                                                        <p className="text-2xl font-bold text-blue-600">{selectedRider.totalOrdersDelivered || 0}</p>
+                                                        <p className="text-2xl font-bold text-blue-600">{riderAnalytics.metrics.deliveredCount || 0}</p>
                                                         <p className="text-xs text-gray-500 mt-1">Delivered</p>
                                                     </div>
                                                     <div className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg">
-                                                        <p className="text-2xl font-bold text-red-600">{selectedRider.totalOrdersCancelled || 0}</p>
+                                                        <p className="text-2xl font-bold text-red-600">{riderAnalytics.metrics.cancelledCount || 0}</p>
                                                         <p className="text-xs text-gray-500 mt-1">Cancelled</p>
                                                     </div>
                                                     <div className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg">
-                                                        <p className="text-2xl font-bold text-yellow-500">{selectedRider.rating}</p>
+                                                        <p className="text-2xl font-bold text-yellow-500">{riderAnalytics.metrics.averageRating || 0}</p>
                                                         <p className="text-xs text-gray-500 mt-1">Avg Rating</p>
                                                     </div>
                                                 </div>
@@ -696,36 +711,47 @@ export default function RidersPage() {
                                         </div>
 
                                         {/* Performance Chart */}
-                                        <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Deliveries This Week</p>
-                                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                                                        {getPerformanceData(selectedRider).reduce((acc, d) => acc + d.deliveries, 0)}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-full">
-                                                    <TrendingUp size={16} />
-                                                    <span className="text-sm font-bold">+12%</span>
-                                                </div>
+                                        {isLoadingAnalytics ? (
+                                            <div className="h-96 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/30 flex items-center justify-center">
+                                                <Loader2 className="animate-spin text-blue-500" size={32} />
                                             </div>
+                                        ) : riderAnalytics?.graphData?.daily ? (
+                                            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Deliveries</p>
+                                                        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                                                            {riderAnalytics.metrics?.deliveredCount || 0}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-full">
+                                                        <TrendingUp size={16} />
+                                                        <span className="text-sm font-bold">+{riderAnalytics.metrics?.deliveredCount || 0}</span>
+                                                    </div>
+                                                </div>
 
-                                            <div className="h-72 w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-800/40 rounded-2xl p-4">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <LineChart data={getPerformanceData(selectedRider)} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                                                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                                                        <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />
-                                                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />
-                                                        <Tooltip
-                                                            contentStyle={{ backgroundColor: '#111827', border: 'none', borderRadius: 12, color: '#e5e7eb' }}
-                                                            labelStyle={{ color: '#9ca3af' }}
-                                                        />
-                                                        <Line type="monotone" dataKey="deliveries" name="Deliveries" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                                                        <Line type="monotone" dataKey="earnings" name="Earnings" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
+                                                <div className="h-72 w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-800/40 rounded-2xl p-4">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <LineChart data={riderAnalytics.graphData.daily.map(d => ({
+                                                            day: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                                                            completed: d.completed,
+                                                            cancelled: d.cancelled,
+                                                            orderValue: d.orderValue
+                                                        }))} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                                                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                                            <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                                            <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                                            <Tooltip
+                                                                contentStyle={{ backgroundColor: '#111827', border: 'none', borderRadius: 12, color: '#e5e7eb' }}
+                                                                labelStyle={{ color: '#9ca3af' }}
+                                                            />
+                                                            <Line type="monotone" dataKey="completed" name="Completed" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                                                            <Line type="monotone" dataKey="cancelled" name="Cancelled" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                                                        </LineChart>
+                                                    </ResponsiveContainer>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : null}
 
                                         {/* Stats Grid */}
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -741,7 +767,7 @@ export default function RidersPage() {
                                                     </div>
                                                     <p className="text-xs text-green-700 dark:text-green-400 font-bold uppercase">Accepted</p>
                                                 </div>
-                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{selectedRider.totalOrdersAccepted || 0}</p>
+                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{riderAnalytics?.metrics?.ordersAccepted || 0}</p>
                                                 <p className="text-xs text-gray-500 mt-1">Total orders accepted</p>
                                             </motion.div>
 
@@ -757,7 +783,7 @@ export default function RidersPage() {
                                                     </div>
                                                     <p className="text-xs text-blue-700 dark:text-blue-400 font-bold uppercase">Completed</p>
                                                 </div>
-                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{selectedRider.totalOrdersDelivered || 0}</p>
+                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{riderAnalytics?.metrics?.deliveredCount || 0}</p>
                                                 <p className="text-xs text-gray-500 mt-1">Successfully delivered</p>
                                             </motion.div>
 
@@ -773,7 +799,7 @@ export default function RidersPage() {
                                                     </div>
                                                     <p className="text-xs text-red-700 dark:text-red-400 font-bold uppercase">Cancelled</p>
                                                 </div>
-                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{selectedRider.totalOrdersCancelled || 0}</p>
+                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{riderAnalytics?.metrics?.cancelledCount || 0}</p>
                                                 <p className="text-xs text-gray-500 mt-1">Orders not completed</p>
                                             </motion.div>
                                         </div>
@@ -823,27 +849,31 @@ export default function RidersPage() {
                                         </div>
 
                                         {/* Additional Insights */}
-                                        <div className="p-5 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-2xl border border-orange-200 dark:border-orange-800/30">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-                                                    <TrendingUp size={20} className="text-white" />
+                                        {riderAnalytics?.metrics && riderAnalytics?.earnings && (
+                                            <div className="p-5 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-2xl border border-orange-200 dark:border-orange-800/30">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                                                        <TrendingUp size={20} className="text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-gray-900 dark:text-white">Performance Insights</h4>
+                                                        <p className="text-xs text-gray-500">Based on recent activity</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900 dark:text-white">Performance Insights</h4>
-                                                    <p className="text-xs text-gray-500">Based on recent activity</p>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="text-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                                                        <p className="text-xs text-gray-500 mb-1">Avg. Time/Delivery</p>
+                                                        <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                                            {riderAnalytics.metrics.averageDeliveryTimeHours ? (riderAnalytics.metrics.averageDeliveryTimeHours * 60).toFixed(0) : '0'} min
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                                                        <p className="text-xs text-gray-500 mb-1">Total Earnings</p>
+                                                        <p className="text-xl font-bold text-gray-900 dark:text-white">₹{(riderAnalytics.earnings.totalEarnings || 0).toLocaleString()}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="text-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                                                    <p className="text-xs text-gray-500 mb-1">Avg. Time/Delivery</p>
-                                                    <p className="text-xl font-bold text-gray-900 dark:text-white">24 min</p>
-                                                </div>
-                                                <div className="text-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                                                    <p className="text-xs text-gray-500 mb-1">Total Earnings</p>
-                                                    <p className="text-xl font-bold text-gray-900 dark:text-white">₹{((selectedRider.totalOrdersDelivered || 0) * 45).toLocaleString()}</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -852,13 +882,69 @@ export default function RidersPage() {
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 mb-4">
                                             <History size={20} className="text-yellow-600" />
-                                            <h3 className="font-bold text-gray-900 dark:text-white">Order history hidden</h3>
+                                            <h3 className="font-bold text-gray-900 dark:text-white">Order History ({riderAnalytics?.orderHistory?.count || 0} Orders)</h3>
                                         </div>
-                                        <div className="text-center py-12 text-gray-500">
-                                            <History size={48} className="mx-auto mb-4 opacity-30" />
-                                            <p className="text-sm">Recent orders are not displayed for this rider.</p>
-                                            <p className="text-xs mt-1">Enable history when needed.</p>
-                                        </div>
+
+                                        {isLoadingAnalytics ? (
+                                            <div className="text-center py-12">
+                                                <Loader2 className="animate-spin text-yellow-500 mx-auto mb-4" size={32} />
+                                                <p className="text-gray-500">Loading orders...</p>
+                                            </div>
+                                        ) : riderAnalytics?.orderHistory?.orders && riderAnalytics.orderHistory.orders.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {riderAnalytics.orderHistory.orders.map((order) => (
+                                                    <motion.div
+                                                        key={order.id}
+                                                        initial={{ opacity: 0, x: -20 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <h4 className="font-bold text-gray-900 dark:text-white">{order.orderNo}</h4>
+                                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold capitalize ${order.status === 'delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                                            order.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                                                'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                        }`}>
+                                                                        {order.status}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                                                    <span className="font-semibold">₹{order.totalAmount}</span> • {order.itemCount} item(s)
+                                                                </p>
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                    📍 {order.deliveryAddress}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                                    📞 {order.customerPhone}
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-gray-500">
+                                                                    {new Date(order.createdAt).toLocaleDateString()}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {order.status === 'delivered' && order.deliveredAt && (
+                                                            <div className="text-xs text-green-600 dark:text-green-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+                                                                ✓ Delivered on {new Date(order.deliveredAt).toLocaleDateString()} at {new Date(order.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-gray-500">
+                                                <History size={48} className="mx-auto mb-4 opacity-30" />
+                                                <p className="text-sm">No orders found for this rider</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -871,9 +957,13 @@ export default function RidersPage() {
                                                 <h3 className="font-bold text-gray-900 dark:text-white">License / RC Document</h3>
                                             </div>
                                             <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-xl relative overflow-hidden border border-gray-200 dark:border-gray-600">
-                                                {selectedRider.licenseImage && selectedRider.licenseImage.length > 0 ? (
+                                                {isLoadingAnalytics ? (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <Loader2 className="animate-spin text-yellow-500" size={32} />
+                                                    </div>
+                                                ) : riderAnalytics?.documentDetails?.licenseImages && riderAnalytics.documentDetails.licenseImages.length > 0 ? (
                                                     <Image
-                                                        src={selectedRider.licenseImage[0]}
+                                                        src={riderAnalytics.documentDetails.licenseImages[0]}
                                                         alt="License document"
                                                         fill
                                                         className="object-contain"
@@ -894,9 +984,9 @@ export default function RidersPage() {
                                                         <><Clock size={14} /> Pending Verification</>
                                                     )}
                                                 </div>
-                                                {selectedRider.licenseImage && selectedRider.licenseImage.length > 0 && (
+                                                {riderAnalytics?.documentDetails?.licenseImages && riderAnalytics.documentDetails.licenseImages.length > 0 && (
                                                     <a
-                                                        href={selectedRider.licenseImage[0]}
+                                                        href={riderAnalytics.documentDetails.licenseImages[0]}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-xs text-blue-600 hover:underline"
@@ -910,7 +1000,7 @@ export default function RidersPage() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                                             <div className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
                                                 <p className="text-xs text-gray-500 uppercase font-bold mb-1">License Number</p>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedRider.licenseNumber || 'N/A'}</p>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">{riderAnalytics?.documentDetails?.licenseNumber || selectedRider.licenseNumber || 'N/A'}</p>
                                             </div>
                                             <div className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
                                                 <p className="text-xs text-gray-500 uppercase font-bold mb-1">Document Status</p>
@@ -919,6 +1009,23 @@ export default function RidersPage() {
                                                 </p>
                                             </div>
                                         </div>
+
+                                        {riderAnalytics?.documentDetails && (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                                                    <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Aadhar Number</p>
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{riderAnalytics.documentDetails.aadharNumber || 'N/A'}</p>
+                                                </div>
+                                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                                                    <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">PAN Number</p>
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{riderAnalytics.documentDetails.panNumber || 'N/A'}</p>
+                                                </div>
+                                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                                                    <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Vehicle Number</p>
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{riderAnalytics.documentDetails.vehicleNo || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 {selectedRider && selectedRider.status === "pending" && (
