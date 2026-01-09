@@ -39,6 +39,8 @@ export default function HomePage() {
   const [visibleProductCount, setVisibleProductCount] = useState(
     INITIAL_PRODUCT_COUNT
   );
+  // Gate UI until client hydration (zustand persist rehydrates after mount)
+  const [hydrated, setHydrated] = useState(false);
   const { toggleWishlist, isWishlisted } = useWishlistStore();
   const { isLoading: isCartLoading } = useCartStore();
   const {
@@ -49,7 +51,7 @@ export default function HomePage() {
     setLocation,
     setGeoLocation,
   } = useLocationStore(); // GET CITY
-
+  // console.log("Location Store:", { currentCity, isLocationVerified, supportedCities });
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [cityInput, setCityInput] = useState("");
@@ -74,6 +76,8 @@ export default function HomePage() {
 
   useEffect(() => {
     setIsClient(true);
+    // Mark hydrated so we can rely on persisted store values
+    setHydrated(true);
   }, []);
 
   // Load supported cities once on client
@@ -156,7 +160,7 @@ export default function HomePage() {
   }, [searchQuery, products, currentCity]);
 
   const visibleProducts = useMemo(() => {
-    // console.log("Calculating visible products:", { productsLength: products?.length, visibleProductCount });
+    console.log("Calculating visible products:", { productsLength: products?.length, visibleProductCount });
     return products?.slice(0, visibleProductCount);
   }, [products, visibleProductCount]);
 
@@ -184,6 +188,15 @@ export default function HomePage() {
   }, [hasMoreProducts, isLoading]);
 
   // Handle location selection UI before loading products
+  // Avoid showing selection UI until client hydration completes (persisted store ready)
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Loader2 className="animate-spin text-gray-400" size={28} />
+      </div>
+    );
+  }
+
   if (!isLocationVerified) {
     const normalizedSupported = supportedCities ?? [];
 
