@@ -67,10 +67,10 @@ export function PriceForm({ initialPricing, submitLabel = "Save Pricing", onSubm
         const isValid = pricing.every((item) => {
             return (
                 item.price >= 0 &&
-                item.discount >= 0 &&
+                (item.discount ?? 0) >= 0 &&
                 item.weight >= 0 &&
                 item.stock >= 0 &&
-                item.discount <= 100
+                (item.discount ?? 0) <= 100
             );
         });
 
