@@ -784,11 +784,11 @@ export default function ShopSettingsPage() {
                                         <input
                                             type="number"
                                             min="0"
-                                            max="50"
+                                            max="1000"
                                             step="0.1"
                                             value={band.km}
                                             onChange={(e) => {
-                                                const km = Math.min(50, Math.max(0, parseFloat(e.target.value) || 0)).toString();
+                                                const km = Math.min(1000, Math.max(0, parseFloat(e.target.value) || 0)).toString();
                                                 setDeliveryBands((prev) => prev.map((b, i) => (i === idx ? { ...b, km } : b)));
                                                 setDeliveryBandsDirty(true);
                                             }}
