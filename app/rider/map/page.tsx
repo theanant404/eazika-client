@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { DeliveryService } from "@/services/deliveryService";
 import socket from "@/lib/socketClient";
+import Image from "next/image";
 
 // --- 1. DARK MODE MAP STYLE (Blinkit/Uber Style) ---
 const darkMapStyle = [
@@ -166,6 +167,8 @@ export default function DeliveryMapPage() {
   const [isArrived, setIsArrived] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState("");
 
   const destinationLocation = useMemo(() => {
     return parseGeo((activeOrder as any)?.address?.geoLocation) || null;
@@ -485,33 +488,72 @@ export default function DeliveryMapPage() {
   };
 
   const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return; // Only allow digits
     if (value.length > 1) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
+    setOtpError(""); // Clear error on input
+    setOtpSuccess("");
     if (value && index < 3) {
       document.getElementById(`otp-${index + 1}`)?.focus();
+    }
+    // Auto-submit when all 4 digits are entered
+    if (value && index === 3 && newOtp.every((digit) => digit !== "")) {
+      setTimeout(() => {
+        verifyOtp(newOtp);
+      }, 100);
+    }
+  };
+
+  const verifyOtp = async (otpArray: string[] = otp) => {
+    const code = otpArray.join("");
+    if (code.length !== 4) {
+      setOtpError("Please enter all 4 digits");
+      return;
+    }
+    if (!/^\d{4}$/.test(code)) {
+      setOtpError("OTP must contain only digits");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setOtpError("");
+    setOtpSuccess("");
+
+    try {
+      const success = await completeCurrentOrder(code);
+      // console.log("Order completion result:", success);
+
+      if (success) {
+        setOtpSuccess("OTP Verified! Delivery Completed!");
+        toast.success("Delivery Completed Successfully!");
+
+        // Wait a moment to show success message before redirecting
+        setTimeout(() => {
+          setOtp(["", "", "", ""]);
+          setIsArrived(false);
+          setOtpSuccess("");
+          // Redirect to delivery/rider page after successful completion
+          router.push("/rider");
+        }, 1500);
+      } else {
+        setOtpError("Invalid OTP. Please try again.");
+        toast.error("Invalid OTP");
+        setOtp(["", "", "", ""]); // Clear inputs on error
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to verify OTP. Please try again.";
+      setOtpError(errorMessage);
+      toast.error(errorMessage);
+      console.error("OTP verification error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleCompleteOrder = async () => {
-    const code = otp.join("");
-    if (code.length !== 4) {
-      toast.error("Enter valid 4-digit OTP");
-      return;
-    }
-    setIsSubmitting(true);
-    const success = await completeCurrentOrder(code);
-    setIsSubmitting(false);
-
-    if (success) {
-      toast.success("Delivery Completed!");
-      setOtp(["", "", "", ""]);
-      setIsArrived(false);
-      router.push("/rider");
-    } else {
-      toast.error("Invalid OTP");
-    }
+    await verifyOtp();
   };
 
   if (!isLoaded || !activeOrder)
@@ -688,7 +730,9 @@ export default function DeliveryMapPage() {
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-700 border border-gray-600 flex-shrink-0">
                       {item.image ? (
-                        <img
+                        <Image
+                          height={50}
+                          width={50}
                           src={item.image}
                           alt={item.name}
                           className="w-full h-full object-cover"
@@ -750,31 +794,75 @@ export default function DeliveryMapPage() {
               <p className="text-gray-400 text-sm font-medium mb-4 uppercase tracking-widest">
                 Enter Delivery OTP
               </p>
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-3 md:gap-4">
                 {otp.map((digit, i) => (
                   <input
                     key={i}
                     id={`otp-${i}`}
                     type="tel"
+                    inputMode="numeric"
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
-                    className="w-14 h-16 bg-gray-800 border-2 border-gray-700 rounded-2xl text-center text-3xl font-bold text-white focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all shadow-inner"
+                    disabled={isSubmitting}
+                    className={`w-12 h-14 md:w-14 md:h-16 rounded-2xl text-center text-2xl md:text-3xl font-bold transition-all shadow-inner focus:outline-none focus:ring-4 ${isSubmitting
+                      ? "bg-gray-700 border-2 border-gray-600 text-gray-400 cursor-not-allowed"
+                      : otpError
+                        ? "bg-gray-800 border-2 border-red-500 text-white focus:border-red-600 focus:ring-red-500/20"
+                        : otpSuccess
+                          ? "bg-gray-800 border-2 border-green-500 text-white focus:border-green-500 focus:ring-green-500/20"
+                          : "bg-gray-800 border-2 border-gray-700 text-white focus:border-green-500 focus:ring-green-500/20"
+                      }`}
                   />
                 ))}
               </div>
+              {otpError && (
+                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <p className="text-red-400 text-sm font-medium">{otpError}</p>
+                </div>
+              )}
+              {otpSuccess && (
+                <div className="mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg animate-pulse">
+                  <p className="text-green-400 text-sm font-medium">{otpSuccess}</p>
+                </div>
+              )}
+              <p className="text-gray-500 text-xs mt-4">
+                Ask the customer for the 4-digit OTP shown on their receipt
+              </p>
             </div>
             <button
               onClick={handleCompleteOrder}
-              disabled={isSubmitting}
-              className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-green-500/20 active:scale-95 transition-transform"
+              disabled={isSubmitting || otp.some((digit) => digit === "")}
+              className={`w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-xl transition-all active:scale-95 ${isSubmitting
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed shadow-gray-700/20"
+                : otp.some((digit) => digit === "")
+                  ? "bg-gray-700 text-gray-400 cursor-not-allowed shadow-gray-700/20"
+                  : "bg-green-500 hover:bg-green-400 text-gray-900 shadow-xl shadow-green-500/20"
+                }`}
             >
               {isSubmitting ? (
-                <span className="animate-spin">⌛</span>
+                <>
+                  <span className="animate-spin">⌛</span>
+                  <span className="text-lg">Verifying...</span>
+                </>
               ) : (
-                <CheckCircle size={22} />
+                <>
+                  <CheckCircle size={22} />
+                  <span className="text-lg">Complete Delivery</span>
+                </>
               )}
-              <span className="text-lg">Complete Delivery</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsArrived(false);
+                setOtp(["", "", "", ""]);
+                setOtpError("");
+                setOtpSuccess("");
+              }}
+              className="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
+              disabled={isSubmitting}
+            >
+              Cancel
             </button>
           </div>
         )}

@@ -119,30 +119,58 @@ export const useDeliveryStore = create<DeliveryState>((set, get) => ({
 
     try {
       const status = 'delivered'
-      await DeliveryService.updateOrderStatus(activeOrder.id, status, parseInt(otp));
-    } catch (e) {
-      console.warn("API failed, proceeding optimistically");
-    }
+      const result = await DeliveryService.updateOrderStatus(activeOrder.id, status, parseInt(otp));
 
-    const remainingQueue = queue.filter(o => o.id !== activeOrder.id);
-    const completedOrder = { ...activeOrder, status: 'delivered' } as DeliveryOrder;
+      // The DeliveryService returns result.data, so the structure is:
+      // result = { statusCode: 200, message: "...", data: {...}, success: true }
+      const apiSuccess = result?.success ?? false;
+      const apiMessage = result?.message ?? "Order status updated";
+      const statusCode = result?.statusCode ?? 200;
 
-    if (remainingQueue.length > 0) {
-      set({
-        activeOrder: remainingQueue[0],
-        queue: remainingQueue,
-        history: [completedOrder, ...history]
+      // console.log("Order status update result:", {
+      //   success: apiSuccess,
+      //   message: apiMessage,
+      //   statusCode: statusCode
+      // });
+
+      // If API call succeeded
+      if (apiSuccess === true) {
+        const remainingQueue = queue.filter(o => o.id !== activeOrder.id);
+        const completedOrder = { ...activeOrder, status: 'delivered' } as DeliveryOrder;
+
+        if (remainingQueue.length > 0) {
+          set({
+            activeOrder: remainingQueue[0],
+            queue: remainingQueue,
+            history: [completedOrder, ...history]
+          });
+        } else {
+          set({
+            activeOrder: null,
+            queue: [],
+            isSessionActive: false,
+            orders: [],
+            history: [completedOrder, ...history]
+          });
+        }
+        return true;
+      } else {
+        // API returned failure response
+        console.error("OTP verification failed - invalid OTP", {
+          message: apiMessage,
+          statusCode: statusCode
+        });
+        return false;
+      }
+
+    } catch (e: any) {
+      const errorMessage = e?.response?.data?.message || e?.message || "Failed to verify OTP";
+      console.error("API call failed during OTP verification:", {
+        error: errorMessage,
+        status: e?.response?.status,
+        statusCode: e?.response?.data?.statusCode
       });
-      return true;
-    } else {
-      set({
-        activeOrder: null,
-        queue: [],
-        isSessionActive: false,
-        orders: [],
-        history: [completedOrder, ...history]
-      });
-      return true;
+      return false;
     }
   },
 
