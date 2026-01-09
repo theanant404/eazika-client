@@ -6,7 +6,7 @@ import { userStore } from "@/store/userStore";
 import ShopService, { shopService } from "@/services/shopService";
 import type { Address } from "@/types/user";
 import Image from "next/image";
-import LogoutButton from "@/components/LogoutButton";
+import { Delete } from "lucide-react";
 
 type WeeklySlot = {
     day: string;
@@ -449,9 +449,7 @@ export default function ShopSettingsPage() {
                         </section>
                     )}
                 </div>
-                {/* <div>
-                    <LogoutButton />
-                </div> */}
+
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -461,10 +459,10 @@ export default function ShopSettingsPage() {
                 </div>
             </div>
 
-            <div className="grid gap-6">
+            <div className="grid gap-4 md:gap-6">
                 {/* Location and address */}
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 space-y-4 shadow-sm">
-                    <div className="flex items-center justify-between">
+                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-3 md:p-5 space-y-4 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Shop Location</h2>
                             <p className="text-sm text-gray-500">Enable location or add address manually.</p>
@@ -473,7 +471,7 @@ export default function ShopSettingsPage() {
                             type="button"
                             onClick={handleGeoLocate}
                             disabled={loadingGeo}
-                            className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold shadow-sm disabled:opacity-70"
+                            className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold shadow-sm disabled:opacity-70 w-full sm:w-auto"
                         >
                             {loadingGeo ? "Detecting..." : "Use current location"}
                         </button>
@@ -586,7 +584,7 @@ export default function ShopSettingsPage() {
                             </div>
                             <div className="space-y-1 md:col-span-2">
                                 <label className="text-xs font-semibold text-gray-500 uppercase">Geo location (lat,lng)</label>
-                                <div className="flex gap-2 items-center">
+                                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                                     <input
                                         value={addressForm.geoLocation || ""}
                                         onChange={(e) => setAddressForm({ ...addressForm, geoLocation: e.target.value })}
@@ -597,13 +595,13 @@ export default function ShopSettingsPage() {
                                         type="button"
                                         onClick={handleGeoLocate}
                                         disabled={loadingGeo}
-                                        className="shrink-0 px-4 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold shadow-sm disabled:opacity-70"
+                                        className="shrink-0 px-4 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold shadow-sm disabled:opacity-70 w-full sm:w-auto"
                                     >
                                         {loadingGeo ? "Locating..." : "Use GPS"}
                                     </button>
                                 </div>
                             </div>
-                            <div className="md:col-span-2 flex justify-end gap-3">
+                            <div className="md:col-span-2 flex flex-col sm:flex-row sm:justify-end gap-3 items-stretch sm:items-center">
                                 {primaryAddress && (
                                     <button
                                         type="button"
@@ -611,7 +609,7 @@ export default function ShopSettingsPage() {
                                             setAddressForm(primaryAddress);
                                             setIsEditingAddress(false);
                                         }}
-                                        className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-200"
+                                        className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-200 w-full sm:w-auto"
                                     >
                                         Cancel
                                     </button>
@@ -619,7 +617,7 @@ export default function ShopSettingsPage() {
                                 <button
                                     type="button"
                                     onClick={upsertAddress}
-                                    className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white"
+                                    className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white w-full sm:w-auto"
                                 >
                                     {primaryAddress ? "Update address" : "Add address"}
                                 </button>
@@ -629,8 +627,8 @@ export default function ShopSettingsPage() {
                 </section>
 
                 {/* Delivery toggle and schedule */}
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 space-y-4 shadow-sm">
-                    <div className="flex items-center justify-between">
+                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-3 md:p-5 space-y-4 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Online delivery</h2>
                             <p className="text-sm text-gray-500">Toggle availability and set timings.</p>
@@ -662,7 +660,7 @@ export default function ShopSettingsPage() {
                             </div>
                         ) : (
                             slots.map((slot, idx) => (
-                                <div key={slot.day} className="flex items-center justify-between border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2">
+                                <div key={slot.day} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2">
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="checkbox"
@@ -674,7 +672,7 @@ export default function ShopSettingsPage() {
                                         />
                                         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{slot.day}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm w-full sm:w-auto">
                                         <input
                                             type="time"
                                             value={slot.open}
@@ -704,7 +702,7 @@ export default function ShopSettingsPage() {
                             type="button"
                             onClick={saveSchedule}
                             disabled={!scheduleDirty || savingSchedule || schedulesLoading}
-                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                         >
                             {savingSchedule ? "Saving..." : "Save schedule"}
                         </button>
@@ -712,8 +710,8 @@ export default function ShopSettingsPage() {
                 </section>
 
                 {/* Delivery radius pricing */}
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 space-y-4 shadow-sm">
-                    <div className="flex items-center justify-between">
+                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-3 md:p-5 space-y-4 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Delivery radius pricing</h2>
                             <p className="text-sm text-gray-500">Set fee per distance band.</p>
@@ -727,7 +725,7 @@ export default function ShopSettingsPage() {
                                 ]);
                                 setDeliveryBandsDirty(true);
                             }}
-                            className="px-3 py-2 rounded-xl text-sm font-semibold bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100"
+                            className="px-3 py-2 rounded-xl text-sm font-semibold bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 w-full sm:w-auto"
                         >
                             Add band
                         </button>
@@ -742,7 +740,7 @@ export default function ShopSettingsPage() {
                             </div>
                         ) : (
                             deliveryBands.map((band, idx) => (
-                                <div key={`band-${idx}`} className="grid grid-cols-2 md:grid-cols-3 gap-3 items-center">
+                                <div key={`band-${idx}`} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center justify-center">
                                     <div>
                                         <label className="text-xs font-semibold text-gray-500 uppercase">Distance (km)</label>
                                         <input
@@ -769,14 +767,14 @@ export default function ShopSettingsPage() {
                                             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm"
                                         />
                                     </div>
-                                    <div className="flex justify-end md:justify-start">
+                                    <div className="flex justify-start sm:justify-start">
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setDeliveryBands((prev) => prev.filter((_, i) => i !== idx));
                                                 setDeliveryBandsDirty(true);
                                             }}
-                                            className="px-3 py-2 rounded-xl text-sm font-semibold bg-red-100 text-red-700"
+                                            className="px-3 py-2 rounded-xl text-sm font-semibold bg-red-100 text-red-700 w-full sm:w-auto"
                                         >
                                             Remove
                                         </button>
@@ -790,7 +788,7 @@ export default function ShopSettingsPage() {
                             type="button"
                             onClick={saveDeliveryBands}
                             disabled={!deliveryBandsDirty || savingPricing || deliveryBandsLoading}
-                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                         >
                             {savingPricing ? "Saving..." : "Save pricing"}
                         </button>
@@ -799,7 +797,7 @@ export default function ShopSettingsPage() {
 
                 {/* Minimum order value */}
                 <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 space-y-3 shadow-sm">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Minimum order value</h2>
                             <p className="text-sm text-gray-500">Orders below this amount will be blocked.</p>
@@ -822,12 +820,12 @@ export default function ShopSettingsPage() {
                                 />
                             )}
                         </div>
-                        <div className="sm:col-span-2 flex justify-end">
+                        <div className="sm:col-span-2 flex flex-col sm:flex-row sm:justify-end gap-3 items-stretch sm:items-center">
                             <button
                                 type="button"
                                 onClick={saveMinOrder}
                                 disabled={!minOrderDirty || savingMinOrder || minOrderLoading}
-                                className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-500 text-white disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                             >
                                 {savingMinOrder ? "Saving..." : "Save minimum order"}
                             </button>
