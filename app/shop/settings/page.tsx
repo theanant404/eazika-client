@@ -273,13 +273,13 @@ export default function ShopSettingsPage() {
         const emptyFields = [];
 
         if (!addressForm.name?.trim()) emptyFields.push("Contact Name");
-        if (!addressForm.phone?.trim() || addressForm.phone.length !== 10) emptyFields.push("Phone (must be 10 digits)");
+        if (!addressForm.phone?.trim() || String(addressForm.phone).length !== 10) emptyFields.push("Phone (must be 10 digits)");
         if (!addressForm.line1?.trim()) emptyFields.push("Address Line");
         if (!addressForm.street?.trim()) emptyFields.push("Street");
         if (!addressForm.city?.trim()) emptyFields.push("City");
         if (!addressForm.state?.trim()) emptyFields.push("State");
         if (!addressForm.country?.trim()) emptyFields.push("Country");
-        if (!addressForm.pinCode?.trim() || addressForm.pinCode.length !== 6) emptyFields.push("Pin Code (must be 6 digits)");
+        if (!String(addressForm.pinCode).trim() || String(addressForm.pinCode).length !== 6) emptyFields.push("Pin Code (must be 6 digits)");
         if (!addressForm.geoLocation?.trim()) emptyFields.push("Geo Location");
 
         if (emptyFields.length > 0) {
