@@ -10,14 +10,14 @@ import {
   Clock,
   Share2,
   Store,
+  Phone,
 } from "lucide-react";
 import Link from "next/link";
 import { shopService, ShopAnalytics } from "@/services/shopService";
 import { shopStore } from "@/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import Image from "next/image";
-import { title } from "process";
+
 
 export default function ShopDashboard() {
   const { currentOders, feathCurrentOrders } = shopStore();
@@ -64,7 +64,7 @@ export default function ShopDashboard() {
     });
     return Array.from(seen.values());
   }, [currentOders.orders]);
-  
+
   // Tabs for order status filtering
   const ORDER_TABS = [
     { id: "all", label: "All Orders" },
@@ -101,7 +101,7 @@ export default function ShopDashboard() {
       bg: isNewShop
         ? "bg-gray-100 dark:bg-gray-700"
         : "bg-blue-100 dark:bg-blue-900/30",
-    },{
+    }, {
       title: "Active Orders",
       value: uniqueOrders.length || "0",
       change: uniqueOrders.length || "0",
@@ -109,7 +109,7 @@ export default function ShopDashboard() {
       color: isNewShop ? "text-gray-400" : "text-yellow-600",
       bg: isNewShop
         ? "bg-gray-100 dark:bg-gray-700"
-        : "bg-yellow-100 dark:bg-yellow-900/30",  
+        : "bg-yellow-100 dark:bg-yellow-900/30",
     },
     {
       title: "Customers",
@@ -130,7 +130,7 @@ export default function ShopDashboard() {
       bg: "bg-yellow-100 dark:bg-yellow-900/30",
     },
   ];
-
+  // console.log("Analytics Metrics:", uniqueOrders);
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -241,13 +241,27 @@ export default function ShopDashboard() {
                           • #{order.id}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
-                        <Clock size={12} />{" "}
-                        {new Date(order.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      <div>
+                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                          <Clock size={12} />{" "}
+                          {new Date(order.createdAt).toLocaleDateString([], {
+                            day: "2-digit",
+                            month: "short",
+                            year: "2-digit",
+                          })}
+                          {" "} at {" "}
+                          {new Date(order.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
                       </div>
+                      <div>
+                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                          <Phone size={12} /> {((order as any).phoneNumber as string) || "N/A"}
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
