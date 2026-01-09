@@ -892,7 +892,7 @@ export default function RidersPage() {
                                             </div>
                                         ) : riderAnalytics?.orderHistory?.orders && riderAnalytics.orderHistory.orders.length > 0 ? (
                                             <div className="space-y-3">
-                                                {riderAnalytics.orderHistory.orders.map((order) => (
+                                                {riderAnalytics.orderHistory.orders.map((order: any) => (
                                                     <motion.div
                                                         key={order.id}
                                                         initial={{ opacity: 0, x: -20 }}
