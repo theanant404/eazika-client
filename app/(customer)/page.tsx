@@ -12,7 +12,6 @@ import { useLocationStore } from "@/store/locationStore"; // IMPORT STORE
 import coustomerService from "@/services/customerService";
 import type { ProductType, Category } from "@/types";
 import { categories as mockCategories } from "@/app/data/mockData";
-import ShopService from "@/services/shopService";
 
 // Animation Variants
 const containerVariants: Variants = {
@@ -94,7 +93,7 @@ export default function HomePage() {
       setIsLoading(true);
       try {
         const [catsData, prodsData] = await Promise.all([
-          ShopService.getCategoriesForPbulic(),
+          coustomerService.getCategories(),
           // PASS CITY TO API
           coustomerService.getProducts(1, 20, currentCity),
         ]);
@@ -160,7 +159,7 @@ export default function HomePage() {
   }, [searchQuery, products, currentCity]);
 
   const visibleProducts = useMemo(() => {
-    console.log("Calculating visible products:", { productsLength: products?.length, visibleProductCount });
+    // console.log("Calculating visible products:", { productsLength: products?.length, visibleProductCount });
     return products?.slice(0, visibleProductCount);
   }, [products, visibleProductCount]);
 

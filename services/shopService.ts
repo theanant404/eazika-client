@@ -491,6 +491,7 @@ export const ShopService = {
   },
   getCategoriesForPbulic: async () => {
     const response = await axios.get("/shops/get-all-categories");
+    console.log("Categories response:", response);
     return response.data.data;
   },
 
