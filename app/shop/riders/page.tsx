@@ -732,7 +732,7 @@ export default function RidersPage() {
 
                                                 <div className="h-72 w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-800/40 rounded-2xl p-4">
                                                     <ResponsiveContainer width="100%" height="100%">
-                                                        <LineChart data={riderAnalytics.graphData.daily.map(d => ({
+                                                        <LineChart data={riderAnalytics.graphData.daily.map((d: any) => ({
                                                             day: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                                                             completed: d.completed,
                                                             cancelled: d.cancelled,
