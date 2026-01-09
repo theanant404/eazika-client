@@ -760,11 +760,11 @@ export const ShopService = {
 
   // --- ANALYTICS ---
   getAnalytics: async (range: string) => {
-    const response = await axiosInstance.get<ShopAnalytics>(
+    const response = await axiosInstance.get<{ data: ShopAnalytics }>(
       "/shops/analytics",
       { params: { range } }
     );
-    return response.data;
+    return response.data.data;
   },
 
   getRiderAnalyticsById: async (riderId: number) => {

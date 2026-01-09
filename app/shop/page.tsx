@@ -17,6 +17,7 @@ import { shopStore } from "@/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Image from "next/image";
+import { title } from "process";
 
 export default function ShopDashboard() {
   const { currentOders, feathCurrentOrders } = shopStore();
@@ -37,12 +38,12 @@ export default function ShopDashboard() {
         const analyticsData = await shopService
           .getAnalytics("all")
           .catch(() => null);
-        // console.log("Analytics Data:", analyticsData);
-        // Set Analytics
+
         if (analyticsData?.metrics) {
           setAnalytics(analyticsData.metrics);
+        } else {
+          setAnalytics(null);
         }
-        // console.log("Fetched analytics data:", analyticsData.data.metrics);
       } catch (error) {
         if (error instanceof Error) {
           console.error("Failed to load dashboard data:", error.message);
@@ -63,7 +64,7 @@ export default function ShopDashboard() {
     });
     return Array.from(seen.values());
   }, [currentOders.orders]);
-
+  
   // Tabs for order status filtering
   const ORDER_TABS = [
     { id: "all", label: "All Orders" },
@@ -92,7 +93,7 @@ export default function ShopDashboard() {
         : "bg-green-100 dark:bg-green-900/30",
     },
     {
-      title: "Active Orders",
+      title: "Totel Orders",
       value: analytics?.orders || "0",
       change: analytics?.ordersTrend || "No active",
       icon: ShoppingBag,
@@ -100,6 +101,15 @@ export default function ShopDashboard() {
       bg: isNewShop
         ? "bg-gray-100 dark:bg-gray-700"
         : "bg-blue-100 dark:bg-blue-900/30",
+    },{
+      title: "Active Orders",
+      value: uniqueOrders.length || "0",
+      change: uniqueOrders.length || "0",
+      icon: ShoppingBag,
+      color: isNewShop ? "text-gray-400" : "text-yellow-600",
+      bg: isNewShop
+        ? "bg-gray-100 dark:bg-gray-700"
+        : "bg-yellow-100 dark:bg-yellow-900/30",  
     },
     {
       title: "Customers",
@@ -138,10 +148,10 @@ export default function ShopDashboard() {
         <div className="flex gap-3"></div>
       </div>
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 lg:grid-cols-5 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
-          const hasPositiveChange = stat.change.includes("+");
+          // const hasPositiveChange = stat.change.includes("+");
 
           return (
             <div
@@ -152,7 +162,7 @@ export default function ShopDashboard() {
                 <div className={`p-2 rounded-lg ${stat.bg} ${stat.color}`}>
                   <Icon size={20} />
                 </div>
-                {stat.change && (
+                {/* {stat.change && (
                   <span
                     className={`text-[10px] font-bold flex items-center px-2 py-1 rounded-full ${isNewShop
                       ? "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
@@ -164,7 +174,7 @@ export default function ShopDashboard() {
                       <ArrowUpRight size={10} className="ml-0.5" />
                     )}
                   </span>
-                )}
+                )} */}
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stat.value}
