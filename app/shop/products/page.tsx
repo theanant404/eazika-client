@@ -760,7 +760,7 @@ export default function ProductsPage() {
           {hasSearched && filteredGlobalProducts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
-                No products found for "{searchQuery}"
+                No products found for &nbsp;{searchQuery}&#34;
               </p>
             </div>
           ) : (
