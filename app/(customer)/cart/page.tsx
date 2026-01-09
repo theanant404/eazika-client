@@ -97,8 +97,9 @@ export default function CartPage() {
   const deliveryTotal = useMemo(() => {
     return 0; // No delivery fees
   }, []);
-
-  const grandTotal = selectedTotal + deliveryTotal;
+  const discountRate = 0.1; // 10% discount
+  const discountAmount = selectedTotal * discountRate;
+  const grandTotal = selectedTotal + deliveryTotal - discountAmount;
 
   // Calculate minimum order requirements by shop
   const shopOrderDetails = useMemo(() => {
@@ -243,6 +244,10 @@ export default function CartPage() {
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Delivery Fee</span>
                   <span className="font-medium text-gray-900 dark:text-gray-200">₹{deliveryTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Discount (10%)</span>
+                  <span className="text-green-600 dark:text-green-400 font-medium">-₹{discountAmount.toFixed(2)}</span>
                 </div>
                 {/* <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Taxes</span>
