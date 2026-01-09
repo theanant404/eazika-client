@@ -16,7 +16,7 @@ export default function DeliveryProfilePage() {
     const { profile, history, fetchProfile, fetchHistory, updateProfile } = useDeliveryStore();
 
     // UI States
-    const [activeTab, setActiveTab] = useState<'details' | 'documents'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'shopkeeper'>('details');
     const [isEditing, setIsEditing] = useState(false);
 
     // Refs for hidden file inputs (to trigger click programmatically)
@@ -79,7 +79,8 @@ export default function DeliveryProfilePage() {
 
         try {
             const url = await DeliveryService.uploadImage(file);
-            await updateProfile({ image: url });
+            // console.log("Profile pic uploaded, updating profile...", url);
+            await updateProfile({ avatar: url });
         } catch (error) {
             console.error("Profile pic upload failed", error);
         }
@@ -141,6 +142,12 @@ export default function DeliveryProfilePage() {
                             className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all shadow-md ${activeTab === 'documents' ? 'bg-linear-to-r from-yellow-400 to-green-400 text-gray-900 scale-105' : 'text-gray-300 hover:text-white bg-gray-800/60 hover:bg-gray-700/80'} duration-200`}
                         >
                             Documents
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('shopkeeper')}
+                            className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all shadow-md ${activeTab === 'shopkeeper' ? 'bg-linear-to-r from-yellow-400 to-green-400 text-gray-900 scale-105' : 'text-gray-300 hover:text-white bg-gray-800/60 hover:bg-gray-700/80'} duration-200`}
+                        >
+                            Shopkeeper
                         </button>
                     </div>
                 </div>
@@ -261,6 +268,106 @@ export default function DeliveryProfilePage() {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </motion.div>
+                        )}
+                        {/* ---Shopkeeper Profile */}
+                        {activeTab === 'shopkeeper' && (
+                            <motion.div
+                                key="shopkeeper"
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                                className="space-y-5"
+                            >
+                                <div className="bg-linear-to-br from-gray-800 via-gray-900 to-gray-800 rounded-2xl p-5 border border-gray-700 shadow-lg">
+                                    <h3 className="text-lg font-extrabold text-white flex items-center gap-2 mb-4 tracking-tight">
+                                        <User size={20} className="text-yellow-400" /> Shop Details
+                                    </h3>
+
+                                    {(profile as any)?.shopkeeper ? (
+                                        <div className="space-y-5">
+                                            {/* Shop Image */}
+                                            {(profile as any).shopkeeper.shopImage && (profile as any).shopkeeper.shopImage.length > 0 && (
+                                                <div className="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden border border-gray-700 shadow-md">
+                                                    <Image
+                                                        src={(profile as any).shopkeeper.shopImage[0]}
+                                                        alt={(profile as any).shopkeeper.shopName || "Shop"}
+                                                        layout="fill"
+                                                        objectFit="cover"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Shop Name & Category */}
+                                            <div className="bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl p-4 border border-gray-700 shadow-sm">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <h4 className="text-white font-bold text-lg">{(profile as any).shopkeeper.shopName || 'N/A'}</h4>
+                                                        <p className="text-gray-400 text-sm capitalize mt-1">
+                                                            {(profile as any).shopkeeper.shopCategory || 'N/A'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/30">
+                                                        <p className="text-green-400 text-xs font-bold uppercase">Partner</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Address Details */}
+                                            {(profile as any).shopkeeper.address && (
+                                                <div className="bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl p-4 border border-gray-700 shadow-sm space-y-3">
+                                                    <h5 className="text-yellow-400 text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                                        <FileBadge size={16} /> Shop Address
+                                                    </h5>
+
+                                                    <div className="space-y-2 text-sm">
+                                                        {/* Contact Person & Phone */}
+                                                        <div className="flex items-start gap-2">
+                                                            <User size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                                                            <div>
+                                                                <p className="text-white font-medium">
+                                                                    {(profile as any).shopkeeper.address.name}
+                                                                </p>
+                                                                <p className="text-gray-400 font-mono text-xs">
+                                                                    {(profile as any).shopkeeper.address.phone}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Full Address */}
+                                                        <div className="flex items-start gap-2">
+                                                            <div className="text-gray-400 mt-0.5 flex-shrink-0">📍</div>
+                                                            <p className="text-gray-300">
+                                                                {(profile as any).shopkeeper.address.line1}
+                                                                {(profile as any).shopkeeper.address.line2 && `, ${(profile as any).shopkeeper.address.line2}`}
+                                                                {(profile as any).shopkeeper.address.street && `, ${(profile as any).shopkeeper.address.street}`}
+                                                                <br />
+                                                                {(profile as any).shopkeeper.address.city}, {(profile as any).shopkeeper.address.state}
+                                                                <br />
+                                                                {(profile as any).shopkeeper.address.country} - {(profile as any).shopkeeper.address.pinCode}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Geo Location */}
+                                                        {(profile as any).shopkeeper.address.geoLocation && (
+                                                            <div className="flex items-start gap-2">
+                                                                <div className="text-gray-400 mt-0.5 flex-shrink-0">🗺️</div>
+                                                                <p className="text-gray-400 font-mono text-xs">
+                                                                    {(profile as any).shopkeeper.address.geoLocation}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Earnings */}
+
+                                        </div>
+                                    ) : (
+                                        <div className="py-8 text-center">
+                                            <p className="text-gray-400 text-sm">No shopkeeper information available</p>
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         )}

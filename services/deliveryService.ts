@@ -20,7 +20,7 @@ export interface UpdateDeliveryProfilePayload {
   vehicleNo?: string;
   vehicleOwnerName?: string;
   licenseNumber?: string;
-  image?: string;
+  avatar?: string;
 }
 
 export interface DeliveryProfile {
@@ -111,7 +111,7 @@ export const DeliveryService = {
 
   // PUT /delivery/update-delivery-profile
   updateProfile: async (data: UpdateDeliveryProfilePayload) => {
-    const response = await axiosInstance.put('/delivery/update-delivery-profile', data);
+    const response = await axiosInstance.put('/delivery/update-avatar', data);
     return response.data;
   },
 

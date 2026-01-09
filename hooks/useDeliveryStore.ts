@@ -76,6 +76,7 @@ export const useDeliveryStore = create<DeliveryState>((set, get) => ({
       const onlineFlag = (data as any)?.isOnline ?? (data as any)?.is_online ?? (data as any)?.online ?? (data as any)?.isAvailable ?? false;
       // console.log(onlineFlag)
       set({ profile: data, isOnline: !!onlineFlag });
+      // console.log("Delivery profile fetched", data);
     } catch (error) {
       console.error("Failed to fetch profile", error);
     } finally {
