@@ -280,13 +280,15 @@ export default function CheckoutPage() {
 
     try {
       const deliveryFee = deliveryFeeCalculation.totalDeliveryFee;
-      const totalAmount = cartTotalAmount + deliveryFee;
+      const discountRate = 0.1; // 10% discount
+      const discountAmount = cartTotalAmount * discountRate;
+      const totalAmount = cartTotalAmount - discountAmount + deliveryFee;
 
       await placeOrder({
         addressId: selectedAddressId,
         paymentMethod: "cash_on_delivery",
-        deliveryFee,
-        totalAmount,
+        deliveryFee: parseInt(String(deliveryFee)),
+        totalAmount: parseInt(String(totalAmount)),
         orderItems: items.map((item) => ({
           productId: item.productId,
           priceId: item.priceId,
@@ -501,6 +503,10 @@ export default function CheckoutPage() {
                   <span>₹{cartTotalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Discount (10%)</span>
+                  <span className="text-green-600 dark:text-green-400 font-medium">-₹{(cartTotalAmount * 0.1).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Delivery Fee</span>
                   <span className={deliveryFeeCalculation.totalDeliveryFee > 0 ? "font-medium text-gray-900 dark:text-white" : "text-green-500 font-medium"}>
                     {deliveryFeeCalculation.totalDeliveryFee === 0 ? "Free" : `₹${deliveryFeeCalculation.totalDeliveryFee.toFixed(2)}`}
@@ -509,7 +515,7 @@ export default function CheckoutPage() {
                 <div className="h-px bg-gray-100 dark:bg-gray-700 my-4" />
                 <div className="flex justify-between text-xl font-bold text-gray-900 dark:text-white">
                   <span>Total</span>
-                  <span>₹{(cartTotalAmount + deliveryFeeCalculation.totalDeliveryFee).toFixed(2)}</span>
+                  <span>₹{(cartTotalAmount - cartTotalAmount * 0.1 + deliveryFeeCalculation.totalDeliveryFee).toFixed(2)}</span>
                 </div>
               </div>
 

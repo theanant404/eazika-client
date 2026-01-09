@@ -41,6 +41,7 @@ const allCartMethods = {
   },
 
   createOrder: async (data: OrderPayload): Promise<void> => {
+    // console.log("Creating order with data:", data);
     const response = await axios.post(
       "/customers/create-order",
       JSON.stringify(data)
