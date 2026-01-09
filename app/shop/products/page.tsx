@@ -499,8 +499,12 @@ export default function ProductsPage() {
                   : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                   }`}
               >
-                <Icon size={14} className="sm:block hidden sm:w-5 sm:h-5" />
-                <Icon size={12} className="block sm:hidden" />
+                <span className="sm:block hidden sm:w-5 sm:h-5">
+                  <Icon size={14} />
+                </span>
+                <span className="block sm:hidden">
+                  <Icon size={12} />
+                </span>
               </div>
               <span
                 className={`text-xs sm:text-lg font-bold line-clamp-1 ${isActive
