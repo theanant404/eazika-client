@@ -705,9 +705,9 @@ export default function RidersPage() {
                                                 <BarChart3 size={20} className="text-yellow-600" />
                                                 <h3 className="font-bold text-gray-900 dark:text-white">Delivery Performance</h3>
                                             </div>
-                                            <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full font-medium">
+                                            {/* <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full font-medium">
                                                 Last 7 Days
-                                            </div>
+                                            </div> */}
                                         </div>
 
                                         {/* Performance Chart */}
