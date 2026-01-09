@@ -191,6 +191,73 @@ export interface ShopAnalytics {
   }[];
 }
 
+export interface RiderAnalyticsResponse {
+  riderInfo: {
+    id: number;
+    name: string | null;
+    phone: string;
+    email: string | null;
+    avatar: string | null;
+    userImage: string | null;
+    vehicleNo: string | null;
+    isAvailable: boolean;
+  };
+  documentDetails: {
+    aadharNumber?: string | null;
+    panNumber?: string | null;
+    licenseNumber?: string | null;
+    licenseImages?: string[];
+    vehicleNo?: string | null;
+    vehicleName?: string | null;
+    vehicleOwnerName?: string | null;
+  };
+  contactDetails: {
+    name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+  metrics: {
+    totalOrders: number;
+    ordersAccepted: number;
+    deliveredCount: number;
+    cancelledCount: number;
+    averageRating: number;
+    ratingCount: number;
+    averageDeliveryTimeHours: number;
+  };
+  earnings: {
+    totalEarnings: number;
+    deliveredOrderValue: number;
+  };
+  graphData: {
+    daily: {
+      date: string;
+      completed: number;
+      cancelled: number;
+      orderValue: number;
+    }[];
+  };
+  orderHistory: {
+    count: number;
+    orders: {
+      id: number;
+      orderNo: string;
+      status: string;
+      totalAmount: number;
+      totalProducts: number;
+      paymentMethod: string;
+      customerName: string;
+      customerPhone: string;
+      deliveryAddress: string;
+      createdAt: string;
+      riderAssignedAt?: string;
+      deliveredAt?: string;
+      itemCount: number;
+    }[];
+  };
+}
+
 // --- Service Implementation ---
 
 export const ShopService = {
@@ -700,10 +767,20 @@ export const ShopService = {
     return response.data;
   },
 
+  getRiderAnalyticsById: async (riderId: number) => {
+    const response = await axiosInstance.get<{ data: RiderAnalyticsResponse }>(
+      `/shops/riders/${riderId}/analytics`
+    );
+    // console.log("Rider analytics response:", response.data.data);
+    return response.data.data;
+  },
+
   toggleProductStatus: async (productId: number, isActive: boolean) => {
     const response = await axiosInstance.patch(`/shops/products/toggle-status/${productId}`, { isActive });
     return response.data.data;
   },
+
+
 };
 
 export default ShopService;

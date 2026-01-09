@@ -25,6 +25,7 @@ import {
     TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ShopService, ShopRider, UserProfile } from '@/services/shopService';
 import Image from 'next/image';
 
@@ -52,6 +53,8 @@ export default function RidersPage() {
     const fetchRiders = async () => {
         try {
             const data = await ShopService.getShopRiders();
+            // const analysisData = await ShopService.getRiderAnalyticsById(data[0]?.id);
+            // console.log("Rider Analytics Data:", analysisData);
             // console.log("Riders data:", data);
             setRiders(data);
         } catch (error) {
@@ -707,33 +710,20 @@ export default function RidersPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Vertical Bar Chart with horizontal scroll */}
-                                            <div className="w-full overflow-x-auto">
-                                                <div className="flex items-end gap-4 min-w-[420px]" style={{ height: 180 }}>
-                                                    {getPerformanceData(selectedRider).map((data, index) => {
-                                                        const maxDeliveries = Math.max(...getPerformanceData(selectedRider).map(d => d.deliveries));
-                                                        const barHeight = maxDeliveries > 0 ? (data.deliveries / maxDeliveries) * 120 : 0;
-                                                        return (
-                                                            <div key={index} className="flex flex-col items-center w-12">
-                                                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{data.deliveries}</div>
-                                                                <motion.div
-                                                                    initial={{ height: 0 }}
-                                                                    animate={{ height: barHeight }}
-                                                                    transition={{ duration: 0.8, delay: index * 0.1 }}
-                                                                    className="w-8 rounded-t-lg bg-gradient-to-t from-yellow-400 to-yellow-600 flex items-end justify-center relative"
-                                                                    style={{ minHeight: 8 }}
-                                                                >
-                                                                    {data.deliveries > 0 && (
-                                                                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-yellow-700 dark:text-yellow-200 bg-white/80 dark:bg-gray-900/80 px-1 rounded">
-                                                                            ₹{data.earnings}
-                                                                        </span>
-                                                                    )}
-                                                                </motion.div>
-                                                                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-2 truncate w-12 text-center">{data.day}</div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
+                                            <div className="h-72 w-full bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-800/40 rounded-2xl p-4">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <LineChart data={getPerformanceData(selectedRider)} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                                                        <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                                        <Tooltip
+                                                            contentStyle={{ backgroundColor: '#111827', border: 'none', borderRadius: 12, color: '#e5e7eb' }}
+                                                            labelStyle={{ color: '#9ca3af' }}
+                                                        />
+                                                        <Line type="monotone" dataKey="deliveries" name="Deliveries" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                                                        <Line type="monotone" dataKey="earnings" name="Earnings" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                                                    </LineChart>
+                                                </ResponsiveContainer>
                                             </div>
                                         </div>
 
@@ -862,12 +852,12 @@ export default function RidersPage() {
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 mb-4">
                                             <History size={20} className="text-yellow-600" />
-                                            <h3 className="font-bold text-gray-900 dark:text-white">Recent Orders</h3>
+                                            <h3 className="font-bold text-gray-900 dark:text-white">Order history hidden</h3>
                                         </div>
                                         <div className="text-center py-12 text-gray-500">
                                             <History size={48} className="mx-auto mb-4 opacity-30" />
-                                            <p className="text-sm">Order history will be displayed here</p>
-                                            <p className="text-xs mt-1">Integration coming soon</p>
+                                            <p className="text-sm">Recent orders are not displayed for this rider.</p>
+                                            <p className="text-xs mt-1">Enable history when needed.</p>
                                         </div>
                                     </div>
                                 )}
